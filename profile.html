@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile | Mero Ludo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { 
+            --primary: #1a252f; --gold: #fbbf24; --success: #27ae60; 
+            --danger: #e74c3c; --blue: #3498db; --bg-dark: #0f172a;
+        }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; padding-bottom: 110px; color: #333; }
+        .profile-header { background: var(--primary); color: white; padding: 40px 15px; text-align: center; border-radius: 0 0 35px 35px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .user-img-container { position: relative; display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px; }
+        .user-img { width: 90px; height: 90px; border-radius: 50%; border: 3px solid var(--gold); object-fit: cover; background: #fff; }
+        .user-name { font-size: 1.4rem; font-weight: bold; margin: 5px 0; }
+        
+        .uid-container { 
+            font-size: 0.9rem; 
+            background: rgba(255,255,255,0.15); 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 10px; 
+            padding: 10px 20px; 
+            border-radius: 30px; 
+            cursor: pointer; 
+            margin-top: 10px; 
+            border: 1px solid rgba(255,255,255,0.3);
+            transition: 0.3s;
+        }
+        .uid-container:active { background: rgba(255,255,255,0.3); transform: scale(0.95); }
+        .uid-container b { color: var(--gold); letter-spacing: 1px; }
+
+        .lucky-draw-btn { background: linear-gradient(135deg, #ff0055, #ffcc00); color: white; padding: 8px 12px; border-radius: 12px; font-size: 0.65rem; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; border: 2px solid white; animation: pulse 1.5s infinite; text-decoration: none; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 0 20px; margin-top: -30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 20px; text-align: center; box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+        .stat-card i { color: var(--gold); font-size: 1.4rem; margin-bottom: 8px; }
+        .stat-val { display: block; font-weight: 800; font-size: 1.2rem; color: #1a252f; }
+        
+        .action-container { display: flex; justify-content: space-between; padding: 25px 20px; gap: 12px; }
+        .btn-main { flex: 1; height: 50px; border: none; border-radius: 15px; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 0.9rem; transition: 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .btn-deposit { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        .btn-withdraw { background: linear-gradient(135deg, #2980b9, #3498db); }
+
+        .menu-list { background: white; margin: 0 20px 20px 20px; border-radius: 20px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .menu-item { padding: 18px; border-bottom: 1px solid #f8f9fa; display: flex; justify-content: space-between; align-items: center; color: #2c3e50; text-decoration: none; cursor: pointer; }
+        
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
+        .modal-content { background: white; width: 85%; padding: 25px; border-radius: 25px; text-align: center; max-height: 80vh; overflow-y: auto; }
+        
+        .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(30, 41, 59, 0.95); display: flex; justify-content: space-around; padding: 12px 0; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); z-index: 2000; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        .nav-item { text-align: center; color: #94a3b8; font-size: 0.7rem; text-decoration: none; font-weight: 600; flex: 1; transition: 0.2s; }
+        .nav-item i { font-size: 1.3rem; margin-bottom: 4px; display: block; }
+        .nav-item.active { color: var(--gold); }
+        
+        #toast { visibility: hidden; min-width: 200px; background: #333; color: #fff; text-align: center; border-radius: 50px; padding: 12px; position: fixed; z-index: 4000; left: 50%; bottom: 110px; transform: translateX(-50%); }
+        #toast.show { visibility: visible; animation: fadeInUp 0.4s; }
+    </style>
+</head>
+<body>
+
+    <div id="toast">Message...</div>
+
+    <div class="profile-header">
+        <div class="user-img-container">
+            <a href="lucky.html" class="lucky-draw-btn"><i class="fas fa-ticket-alt"></i>Lucky Draw</a>
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Gamer" class="user-img" id="displayPic">
+            <div style="min-width: 60px;"></div> 
+        </div>
+        <div class="user-name" id="displayName">Loading...</div>
+        
+        <div class="uid-container" onclick="copyReferCode()">
+            <span>Referral Code: <b id="displayReferCode">....</b></span>
+            <i class="far fa-copy" style="color: var(--gold);"></i>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <i class="fas fa-users"></i>
+            <span class="stat-val" id="referCountDisplay">0</span>
+            <small>Total Referral</small>
+        </div>
+        <div class="stat-card">
+            <i class="fas fa-wallet"></i>
+            <span class="stat-val" id="totalBalance">रू 0.00</span>
+            <small>Total Balance</small>
+        </div>
+    </div>
+
+    <div class="action-container">
+        <button class="btn-main btn-deposit" onclick="window.location.href='deposit.html'">
+            <i class="fas fa-plus-circle"></i> DEPOSIT
+        </button>
+        <button class="btn-main btn-withdraw" onclick="openModal('withdrawModal')">
+            <i class="fas fa-university"></i> WITHDRAW
+        </button>
+    </div>
+
+    <div class="menu-list">
+        <div class="menu-item" onclick="openModal('editModal')"><span><i class="fas fa-user-edit" style="color:var(--blue);"></i> Edit Name</span><i class="fas fa-chevron-right"></i></div>
+        <div class="menu-item" onclick="showToast('History loading...')"><span><i class="fas fa-history" style="color:var(--success);"></i> History</span><i class="fas fa-chevron-right"></i></div>
+        <div class="menu-item" onclick="shareAndEarn()"><span><i class="fas fa-share-nodes" style="color:var(--gold);"></i> Share & Earn</span><i class="fas fa-chevron-right"></i></div>
+        <div class="menu-item" style="color:var(--danger); font-weight:bold;" id="logoutBtn"><span><i class="fas fa-sign-out-alt"></i> Logout</span></div>
+    </div>
+
+    <div id="editModal" class="modal"><div class="modal-content">
+        <h3>Edit Profile Name</h3>
+        <input type="text" id="newName" placeholder="New Name" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; box-sizing: border-box;">
+        <button class="btn-main btn-deposit" style="width:100%; margin-top:15px;" id="saveNameBtn">SAVE</button>
+        <button onclick="closeModal('editModal')" style="margin-top:15px; background:none; border:none; color:gray; cursor:pointer;">Cancel</button>
+    </div></div>
+
+    <div id="withdrawModal" class="modal"><div class="modal-content">
+        <h3>Withdraw Money</h3>
+        <select id="witMethod" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd;">
+            <option value="esewa">eSewa</option>
+            <option value="khalti">Khalti</option>
+        </select>
+        <input type="text" id="witID" placeholder="ID Number" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd; box-sizing: border-box;">
+        <input type="number" id="witAmount" placeholder="Amount (Min 100)" style="width:100%; padding:12px; margin-bottom:15px; border-radius:10px; border:1px solid #ddd; box-sizing: border-box;">
+        <button class="btn-main" style="background:var(--blue); width:100%;" id="confirmWithdrawBtn">SEND REQUEST</button>
+        <button onclick="closeModal('withdrawModal')" style="margin-top:10px; background:none; border:none; color:gray; cursor:pointer;">Cancel</button>
+    </div></div>
+
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="nav-item"><i class="fas fa-home"></i>Home</a>
+        <a href="matches.html" class="nav-item"><i class="fas fa-gamepad"></i>Matches</a>
+        <a href="notice.html" class="nav-item"><i class="fas fa-bullhorn"></i>Notice</a>
+        <a href="profile.html" class="nav-item active"><i class="fas fa-user"></i>Profile</a>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, setDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
+            authDomain: "harishbist-3a263.firebaseapp.com",
+            projectId: "harishbist-3a263",
+            storageBucket: "harishbist-3a263.firebasestorage.app",
+            messagingSenderId: "816353842957",
+            appId: "1:816353842957:web:5b853c5bed6450fc544244"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentBalance = 0;
+        let currentUser = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                onSnapshot(doc(db, "users", user.uid), async (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        currentBalance = data.balance || 0;
+                        document.getElementById('displayName').innerText = data.name || "User";
+                        
+                        // Referral Code Display
+                        document.getElementById('displayReferCode').innerText = data.referralCode || "LUDO101";
+                        document.getElementById('totalBalance').innerText = "रू " + currentBalance.toFixed(2);
+                        document.getElementById('referCountDisplay').innerText = data.referCount || 0;
+                    } else {
+                        // नयाँ प्रयोगकर्ताको लागि पूर्ण सेटअप (रू ५ बोनससहित)
+                        const uniqueTail = user.uid.slice(-4).toUpperCase();
+                        const newReferralCode = "LUDO" + uniqueTail + Math.floor(10 + Math.random() * 89);
+                        
+                        // LocalStorage बाट रिफर कोड चेक गर्ने (Sign up गर्दा सेभ गरिएको छ भने)
+                        const referredByCode = localStorage.getItem('referredBy'); 
+
+                        await setDoc(doc(db, "users", user.uid), {
+                            name: "Gamer_" + Math.floor(1000 + Math.random() * 9000),
+                            balance: 5, // नयाँ युजरलाई ५ रुपैयाँ
+                            referralCode: newReferralCode,
+                            referBy: referredByCode || null,
+                            referCount: 0,
+                            uid: user.uid,
+                            createdAt: serverTimestamp()
+                        });
+
+                        // रिफर गर्नेलाई ७ रुपैयाँ दिने लजिक
+                        if (referredByCode) {
+                            const q = query(collection(db, "users"), where("referralCode", "==", referredByCode));
+                            const querySnapshot = await getDocs(q);
+                            
+                            if (!querySnapshot.empty) {
+                                const referrerDoc = querySnapshot.docs[0];
+                                const referrerRef = doc(db, "users", referrerDoc.id);
+                                await updateDoc(referrerRef, {
+                                    balance: (referrerDoc.data().balance || 0) + 7, // रिफर गर्नेलाई ७ रुपैयाँ
+                                    referCount: (referrerDoc.data().referCount || 0) + 1
+                                });
+                            }
+                            localStorage.removeItem('referredBy'); // काम सकिएपछि कोड हटाउने
+                        }
+                    }
+                });
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        window.saveName = async () => {
+            const name = document.getElementById('newName').value.trim();
+            if(!name) return showToast("कृपया नाम लेख्नुहोस्!");
+            try {
+                await updateDoc(doc(db, "users", currentUser.uid), { name: name });
+                showToast("नाम अपडेट भयो!");
+                closeModal('editModal');
+            } catch (e) { showToast("अपडेट असफल भयो!"); }
+        };
+
+        window.handleWithdraw = async () => {
+            const method = document.getElementById('witMethod').value;
+            const idNum = document.getElementById('witID').value.trim();
+            const amount = parseFloat(document.getElementById('witAmount').value);
+
+            if(!idNum || isNaN(amount)) return showToast("विवरण पुरा भर्नुहोस्!");
+            if(amount < 100) return showToast("न्यूनतम रू १००!");
+            if(amount > currentBalance) return showToast("पर्याप्त ब्यालेन्स छैन!");
+
+            try {
+                await addDoc(collection(db, "withdraw_requests"), {
+                    uid: currentUser.uid,
+                    method: method,
+                    accountID: idNum,
+                    amount: amount,
+                    status: "pending",
+                    timestamp: serverTimestamp()
+                });
+                await updateDoc(doc(db, "users", currentUser.uid), {
+                    balance: currentBalance - amount
+                });
+                showToast("अनुरोध पठाइयो!");
+                closeModal('withdrawModal');
+            } catch (e) { showToast("असफल भयो!"); }
+        };
+
+        document.getElementById('logoutBtn').onclick = () => {
+            signOut(auth).then(() => window.location.href = "index.html");
+        };
+
+        window.shareAndEarn = () => {
+            const code = document.getElementById('displayReferCode').innerText;
+            const shareText = `Mero Ludo मा गेम खेल्नुहोस् र पैसा जित्नुहोस्! मेरो कोड: ${code}`;
+            if (navigator.share) {
+                navigator.share({ title: 'Mero Ludo', text: shareText, url: window.location.origin });
+            } else {
+                copyReferCode();
+            }
+        };
+
+        document.getElementById('saveNameBtn').onclick = window.saveName;
+        document.getElementById('confirmWithdrawBtn').onclick = window.handleWithdraw;
+    </script>
+
+    <script>
+        window.showToast = (msg) => {
+            const t = document.getElementById("toast");
+            t.innerText = msg; t.className = "show";
+            setTimeout(() => { t.className = ""; }, 2500);
+        };
+        window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+        window.copyReferCode = () => {
+            const code = document.getElementById('displayReferCode').innerText;
+            navigator.clipboard.writeText(code).then(() => showToast("Refer Code Copied!"));
+        };
+    </script>
+</body>
+</html>

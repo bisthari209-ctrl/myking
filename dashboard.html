@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Dashboard - Strategy Spin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { 
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --primary: #c0392b; 
+            --gold: #fbbf24; 
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --border-gold: rgba(251, 191, 36, 0.3);
+            --success: #22c55e;
+            --danger: #ef4444;
+            --drawer-grad: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%);
+        }
+
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-dark); color: var(--text-main); padding-bottom: 90px; overflow-x: hidden; }
+
+        /* Toast Notification */
+        #toast { 
+            visibility: hidden; min-width: 180px; background-color: #1e293b; color: var(--gold); 
+            text-align: center; border-radius: 15px; padding: 12px; position: fixed; 
+            z-index: 5000; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.7); 
+            border: 2px solid var(--gold); font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #toast.show { visibility: visible; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* Small Side Drawer Logic */
+        .side-drawer {
+            position: fixed; top: 0; left: -160px; width: 160px; height: 100%;
+            background: var(--drawer-grad); z-index: 3000;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 5px 0 25px rgba(0,0,0,0.8); padding: 20px 10px;
+            border-right: 2px solid var(--gold); box-sizing: border-box; backdrop-filter: blur(10px);
+            display: flex; flex-direction: column;
+        }
+        .side-drawer.open { left: 0; }
+        
+        .drawer-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            z-index: 2999; display: none; backdrop-filter: blur(4px);
+        }
+
+        .support-link {
+            display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.1); 
+            padding: 10px; border-radius: 10px; margin-bottom: 8px; text-decoration: none; 
+            color: white; font-weight: 600; transition: 0.3s; font-size: 0.75rem;
+        }
+
+        /* Header Layout */
+        .header { 
+            background: #7f1d1d; color: white; padding: 12px 15px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: sticky; top: 0; z-index: 1000; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+        .support-btn {
+            background: #ffffff; border: 1.5px solid var(--gold); padding: 6px 10px; border-radius: 8px;
+            color: #7f1d1d; font-weight: 900; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 5px;
+        }
+        .balance-box { 
+            background: #ffffff; padding: 6px 12px; border-radius: 10px; border: 1.5px solid var(--gold); 
+            font-weight: 900; font-size: 0.85rem; color: #7f1d1d; display: flex; align-items: center; gap: 4px;
+        }
+
+        /* Grid & Cards */
+        .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
+        .game-card { background: var(--card-bg); border-radius: 18px; overflow: hidden; border: 1px solid var(--border-gold); text-align: center; display: flex; flex-direction: column; }
+        .game-card img { width: 100%; height: 90px; object-fit: cover; }
+        .game-card h3 { margin: 8px 0; font-size: 0.85rem; font-weight: 800; color: var(--gold); text-transform: uppercase; }
+        
+        .play-btn { background: linear-gradient(to right, #22c55e, #16a34a); color: white; border: none; padding: 8px; border-radius: 10px; margin: 0 10px 12px 10px; cursor: pointer; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; }
+        .demo-btn { background: linear-gradient(to right, #6366f1, #4f46e5); }
+
+        /* Modals */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background: var(--card-bg); width: 85%; max-width: 320px; padding: 20px; border-radius: 22px; text-align: center; border: 1px solid var(--border-gold); }
+        input { width: 100%; padding: 12px; margin-bottom: 12px; background: #0f172a; border: 1px solid var(--border-gold); border-radius: 10px; color: white; box-sizing: border-box; }
+
+        /* Spin */
+        .wheel-outer { position: relative; width: 160px; height: 160px; margin: 15px auto; border: 4px solid var(--gold); border-radius: 50%; }
+        .wheel-container { width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
+        .wheel-img { width: 100%; height: 100%; position: absolute; background: conic-gradient(#ef4444 0deg 60deg, #fbbf24 60deg 120deg, #22c55e 120deg 180deg, #3b82f6 180deg 240deg, #8b5cf6 240deg 300deg, #f97316 300deg 360deg); z-index: 1; }
+        .number-slot { position: absolute; width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; padding-top: 8px; color: white; font-weight: 900; font-size: 0.9rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); z-index: 2; box-sizing: border-box; }
+
+        /* Bottom Nav */
+        .bottom-nav { position: fixed; bottom: 12px; left: 12px; right: 12px; background: rgba(30, 41, 59, 0.95); display: flex; justify-content: space-around; padding: 10px 0; border-radius: 18px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); z-index: 1000; }
+        .nav-item { text-align: center; color: var(--text-dim); font-size: 0.65rem; text-decoration: none; font-weight: 600; }
+        .nav-item.active { color: var(--gold); }
+        .nav-item i { font-size: 1.2rem; margin-bottom: 4px; display: block; }
+    </style>
+</head>
+<body>
+
+    <div id="toast">सूचना...</div>
+    <div class="drawer-overlay" id="overlay" onclick="closeDrawer()"></div>
+    
+    <div class="side-drawer" id="sideDrawer">
+        <h2 style="color: var(--gold); font-size: 0.9rem; text-align:center; margin-bottom: 20px;"><i class="fas fa-bars"></i> MENU</h2>
+        <a href="https://wa.me/9779800000000" class="support-link"><i class="fab fa-whatsapp" style="color:#25D366;"></i> WA</a>
+        <a href="https://t.me/yourid" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> TG</a>
+        <a href="profile.html" class="support-link"><i class="fas fa-user-circle" style="color:var(--gold);"></i> Pro</a>
+        
+        <button onclick="closeDrawer()" class="play-btn" style="background:#fbbf24; color: #450a0a; width: 100%; margin-top: auto; padding: 8px; font-size: 0.65rem;">बन्द</button>
+    </div>
+
+    <header class="header">
+        <div class="support-btn" onclick="openDrawer()"><i class="fas fa-bars"></i> मेनु</div>
+        <div class="balance-box"><i class="fas fa-wallet"></i> रू <span id="userBalance">0.00</span></div>
+    </header>
+
+    <main class="game-grid">
+        <div class="game-card"><img src="https://i.ibb.co/GvfdCh8y/images.jpg"><h3>Ludo King</h3><button class="play-btn" onclick="openMatchModal('Ludo King')">JOIN</button></div>
+        <div class="game-card"><img src="https://i.ibb.co/chgx7WP7/download.jpg"><h3>PUBG</h3><button class="play-btn" onclick="openMatchModal('PUBG')">JOIN</button></div>
+        <div class="game-card"><img src="https://i.ibb.co/HT41RmqB/images-3.jpg"><h3>Free Fire</h3><button class="play-btn" onclick="openMatchModal('Free Fire')">JOIN</button></div>
+        <div class="game-card"><img src="https://i.ibb.co/YBnVSZV1/download-1.jpg"><h3>Carrom</h3><button class="play-btn" onclick="openMatchModal('Carrom')">JOIN</button></div>
+        <div class="game-card"><img src="https://i.ibb.co/397kdSqt/1775469473110.png"><h3>Normal</h3><button class="play-btn demo-btn" onclick="openSpinModal('normal')">DEMO</button></div>
+        <div class="game-card"><img src="https://i.ibb.co/cchmBptQ/1775469646433.png"><h3>Big Spin</h3><button class="play-btn demo-btn" onclick="openSpinModal('big')">DEMO</button></div>
+    </main>
+
+    <div id="matchModal" class="modal">
+        <div class="modal-content">
+            <h3 id="matchTitle" style="color:var(--gold); font-size: 1rem;">Create Match</h3>
+            <p style="font-size: 0.7rem; color: var(--danger); font-weight: bold; margin-bottom: 10px;">Admin Fee: 15%</p>
+            <input type="number" id="entryAmount" placeholder="Amount (Min 10)">
+            <input type="text" id="roomCode" placeholder="Room Code">
+            <button id="createMatchBtn" class="play-btn" style="width: 100%; margin: 5px 0;">CREATE</button>
+            <button onclick="toggleModal('matchModal')" class="play-btn" style="background:#475569; width: 100%; margin: 5px 0;">CANCEL</button>
+        </div>
+    </div>
+
+    <div id="spinModal" class="modal">
+        <div class="modal-content">
+            <h3 id="spinDisplayTitle" style="color:var(--gold); font-size: 1rem;">Lucky Spin</h3>
+            <div class="wheel-outer">
+                <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 15px solid var(--gold); z-index: 10;"></div>
+                <div class="wheel-container" id="wheelWrapper">
+                    <div class="wheel-img"></div>
+                    <div id="slot1" class="number-slot" style="transform: rotate(30deg);">?</div>
+                    <div id="slot2" class="number-slot" style="transform: rotate(90deg);">?</div>
+                    <div id="slot3" class="number-slot" style="transform: rotate(150deg);">?</div>
+                    <div id="slot4" class="number-slot" style="transform: rotate(210deg);">?</div>
+                    <div id="slot5" class="number-slot" style="transform: rotate(270deg);">?</div>
+                    <div id="slot6" class="number-slot" style="transform: rotate(330deg);">?</div>
+                </div>
+            </div>
+            <div id="spinResultText" style="margin: 8px; font-size: 1rem; font-weight: 800; color: var(--success); height: 20px;"></div>
+            <button id="spinStartBtn" class="play-btn demo-btn" style="width: 100%; margin: 5px 0;">SPIN NOW</button>
+            <button onclick="toggleModal('spinModal')" class="play-btn" style="background:#475569; width: 100%; margin: 5px 0;">CLOSE</button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="nav-item active"><i class="fas fa-home"></i>Home</a>
+        <a href="matches.html" class="nav-item"><i class="fas fa-gamepad"></i>Matches</a>
+        <a href="notice.html" class="nav-item"><i class="fas fa-bullhorn"></i>Notice</a>
+        <a href="profile.html" class="nav-item"><i class="fas fa-user"></i>Profile</a>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, setDoc, updateDoc, collection, addDoc, serverTimestamp, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
+            authDomain: "harishbist-3a263.firebaseapp.com",
+            projectId: "harishbist-3a263",
+            storageBucket: "harishbist-3a263.firebasestorage.app",
+            messagingSenderId: "816353842957",
+            appId: "1:816353842957:web:5b853c5bed6450fc544244"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userBalance = 0;
+        let userData = null;
+        let unsubscribe = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userRef = doc(db, "users", user.uid);
+                const firstCheck = await getDoc(userRef);
+
+                const uidTail = user.uid.slice(-4).toUpperCase();
+                const freshCode = "HB" + uidTail + Math.floor(10 + Math.random() * 89);
+
+                if (!firstCheck.exists()) {
+                    await setDoc(userRef, {
+                        name: user.displayName || "प्लेयर",
+                        email: user.email,
+                        balance: 0.00,
+                        referralCode: freshCode,
+                        joinedAt: serverTimestamp()
+                    });
+                } else {
+                    const currentCode = firstCheck.data().referralCode;
+                    if (!currentCode || currentCode.includes("USER") || currentCode.includes("LUDO")) {
+                        await updateDoc(userRef, { referralCode: freshCode });
+                    }
+                }
+
+                if (unsubscribe) unsubscribe();
+                unsubscribe = onSnapshot(userRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        userData = docSnap.data();
+                        userBalance = Number(userData.balance) || 0;
+                        document.getElementById('userBalance').innerText = userBalance.toFixed(2);
+                    }
+                });
+            } else { window.location.replace("index.html"); }
+        });
+
+        window.handleCreateMatch = async () => {
+            if (!auth.currentUser || !userData) return showToast("लोडिङ...");
+            const game = document.getElementById('matchTitle').innerText.replace("Create ", "");
+            const amount = parseFloat(document.getElementById('entryAmount').value);
+            const code = document.getElementById('roomCode').value.trim();
+            if (!amount || amount < 10) return showToast("Min रू १०!");
+            if (!code) return showToast("Code हाल्नुहोस्!");
+            if (userBalance < amount) return showToast("ब्यालेन्स कम छ!");
+
+            const btn = document.getElementById('createMatchBtn');
+            btn.disabled = true;
+
+            try {
+                await addDoc(collection(db, "matches"), {
+                    game: game,
+                    entryFee: amount,
+                    roomCode: code,
+                    createdBy: auth.currentUser.uid,
+                    playerName: userData.name || "Player",
+                    status: "waiting",
+                    createdAt: serverTimestamp()
+                });
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { balance: userBalance - amount });
+                showToast("म्याच रेडी!");
+                toggleModal('matchModal');
+            } catch (err) { showToast("Error!"); }
+            finally { btn.disabled = false; }
+        };
+        document.getElementById('createMatchBtn').onclick = window.handleCreateMatch;
+    </script>
+
+    <script>
+        let spinning = false;
+        window.openDrawer = () => { document.getElementById('sideDrawer').classList.add('open'); document.getElementById('overlay').style.display = 'block'; };
+        window.closeDrawer = () => { document.getElementById('sideDrawer').classList.remove('open'); document.getElementById('overlay').style.display = 'none'; };
+        window.showToast = (msg) => { const t = document.getElementById("toast"); t.innerText = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); };
+        window.toggleModal = (id) => { if(!spinning) { const m = document.getElementById(id); m.style.display = (m.style.display === 'flex') ? 'none' : 'flex'; } };
+        window.openMatchModal = (game) => { document.getElementById('matchTitle').innerText = "Create " + game; toggleModal('matchModal'); };
+        
+        window.openSpinModal = (type) => {
+            const prizes = (type === 'normal') ? [5, 10, 3, 0, 2, 7] : [10, 5, 7, 14, 20, 6];
+            document.getElementById('spinDisplayTitle').innerText = (type === 'normal') ? "Normal Spin" : "Big Spin";
+            prizes.forEach((val, i) => document.getElementById(`slot${i+1}`).innerText = val);
+            document.getElementById('spinStartBtn').onclick = () => {
+                if(spinning) return; spinning = true;
+                document.getElementById('spinResultText').innerText = "घुम्दैछ...";
+                let stopAt = Math.floor(Math.random() * 6);
+                const wheel = document.getElementById('wheelWrapper');
+                wheel.style.transform = `rotate(${(360 * 5) - (stopAt * 60 + 30)}deg)`;
+                setTimeout(() => {
+                    document.getElementById('spinResultText').innerText = "जित: रू " + prizes[stopAt];
+                    showToast("डेमो मात्र हो!");
+                    spinning = false;
+                }, 4000);
+            };
+            toggleModal('spinModal');
+        };
+    </script>
+</body>
+</html>

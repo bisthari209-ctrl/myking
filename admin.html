@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RK Admin Panel | Firestore</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root { --primary: #1a252f; --accent: #f1c40f; --danger: #e74c3c; --success: #27ae60; --sidebar-width: 250px; --blue: #3498db; }
+        body { font-family: sans-serif; margin: 0; background: #f4f7f6; display: flex; height: 100vh; overflow: hidden; }
+        .menu-toggle { display: block; position: fixed; top: 15px; left: 15px; z-index: 2001; background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+        .sidebar { width: var(--sidebar-width); background: var(--primary); color: white; padding: 20px; box-sizing: border-box; transition: 0.3s; z-index: 2000; }
+        .sidebar h2 { color: var(--accent); font-size: 1.2rem; text-align: center; border-bottom: 1px solid #34495e; padding-bottom: 15px; }
+        .nav-link { display: block; color: #bdc3c7; padding: 12px; text-decoration: none; margin-bottom: 5px; border-radius: 5px; cursor: pointer; }
+        .nav-link:hover, .nav-link.active { background: #34495e; color: white; }
+        .main-content { flex: 1; overflow-y: auto; padding: 25px; transition: 0.3s; position: relative; padding-top: 70px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; overflow-x: auto; }
+        .ss-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 1px solid #ddd; margin-right: 5px; }
+        @media (max-width: 768px) { .sidebar { position: fixed; left: -250px; height: 100%; } .sidebar.open { left: 0; } .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1999; } .overlay.active { display: block; } }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 15px; border-radius: 10px; border-top: 4px solid var(--accent); text-align: center; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+        .btn-group { display: flex; gap: 5px; }
+        .action-btn { padding: 8px 12px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .approve { background: var(--success); }
+        .reject { background: var(--danger); }
+        .edit-btn { background: #2980b9; }
+        .hidden { display: none; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; box-sizing: border-box; }
+        .search-container { margin-bottom: 15px; position: relative; }
+        .search-container input { padding-left: 35px; border: 2px solid var(--primary); }
+        .search-container i { position: absolute; left: 12px; top: 22px; color: var(--primary); }
+    </style>
+</head>
+<body>
+
+    <button class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar" id="sidebar">
+        <h2>RK ADMIN PANEL</h2>
+        <div class="nav-link active" onclick="showSection('dashboard')"><i class="fas fa-home"></i> Dashboard</div>
+        <div class="nav-link" onclick="showSection('matches')"><i class="fas fa-gamepad"></i> Match Reports</div>
+        <div class="nav-link" onclick="showSection('matchbox')"><i class="fas fa-list"></i> Match Box</div>
+        <div class="nav-link" onclick="showSection('deposits')"><i class="fas fa-wallet"></i> Deposits</div>
+        <div class="nav-link" onclick="showSection('withdraws')"><i class="fas fa-university"></i> Withdraws</div>
+        <div class="nav-link" onclick="showSection('luckydraw')"><i class="fas fa-ticket-alt"></i> Lucky Draw</div>
+        <div class="nav-link" onclick="showSection('users')"><i class="fas fa-users"></i> Users</div>
+        <div class="nav-link" onclick="showSection('settings')"><i class="fas fa-cog"></i> Settings</div>
+    </div>
+
+    <div class="main-content">
+        <div id="section-dashboard">
+            <h1>Dashboard Overview</h1>
+            <div class="stats-grid">
+                <div class="stat-card"><h3>कुल युजर</h3><p id="stat-totalUsers">0</p></div>
+                <div class="stat-card"><h3>डिपोजिट पेन्डिङ</h3><p id="stat-pendingDeposit">0</p></div>
+                <div class="stat-card"><h3>विथड्र पेन्डिङ</h3><p id="stat-pendingWithdraw">0</p></div>
+                <div class="stat-card"><h3>कुल म्याच</h3><p id="stat-matchCount">0</p></div>
+            </div>
+        </div>
+
+        <div id="section-matchbox" class="hidden">
+            <h1>Match Box</h1>
+            <div class="card"><table><thead><tr><th>ID</th><th>Creator</th><th>Joiner</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="matchBoxList"></tbody></table></div>
+        </div>
+
+        <div id="section-matches" class="hidden">
+            <h1>Match Disputes</h1>
+            <div class="card"><table><thead><tr><th>ID</th><th>Players</th><th>Screenshot</th><th>Claims</th><th>Action</th></tr></thead><tbody id="matchListBody"></tbody></table></div>
+        </div>
+
+        <div id="section-deposits" class="hidden">
+            <h1>Deposits</h1>
+            <div class="card"><table><thead><tr><th>User</th><th>Amount</th><th>Proof</th><th>Action</th></tr></thead><tbody id="depositListBody"></tbody></table></div>
+        </div>
+
+        <div id="section-withdraws" class="hidden">
+            <h1>Withdraws</h1>
+            <div class="card"><table><thead><tr><th>User UID</th><th>Method</th><th>Wallet No.</th><th>Amount</th><th>Action</th></tr></thead><tbody id="withdrawListBody"></tbody></table></div>
+        </div>
+
+        <div id="section-luckydraw" class="hidden">
+            <h1>Lucky Draw Management</h1>
+            <div class="card" style="background:#fffbe6; border: 1px solid #f1c40f;">
+                <h3>Set System Lucky Code</h3>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="luckyCodeInput" placeholder="५ अंकको कोड" maxlength="5">
+                    <button class="action-btn approve" onclick="updateLuckyCode()">Update Code</button>
+                </div>
+                <p>हालको सिस्टम कोड: <span id="currentSystemCode" style="color:var(--danger); font-weight:bold;">---</span></p>
+            </div>
+            <div class="card">
+                <h3>Draw History</h3>
+                <table><thead><tr><th>Time</th><th>Name (UID)</th><th>Box</th><th>User No.</th><th>Result</th></tr></thead><tbody id="luckyDrawListBody"></tbody></table>
+            </div>
+        </div>
+
+        <div id="section-users" class="hidden">
+            <h1>Manage Users</h1>
+            <div class="search-container"><i class="fas fa-search"></i><input type="text" id="userSearchInput" placeholder="UID वा नामबाट खोज्नुहोस्..." onkeyup="filterUsers()"></div>
+            <div class="card"><table><thead><tr><th>UID</th><th>Name</th><th>Balance</th><th>Action</th></tr></thead><tbody id="userListBody"></tbody></table></div>
+        </div>
+
+        <div id="section-settings" class="hidden">
+            <h1>Global Settings</h1>
+            <div class="card">
+                <label>App Download Link:</label><input type="text" id="appLinkInput">
+                <label>Home Notice:</label><textarea id="noticeText" rows="4"></textarea>
+                <button class="action-btn approve" style="margin-top:15px;" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, doc, onSnapshot, updateDoc, deleteDoc, setDoc, getDoc, runTransaction, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
+            authDomain: "harishbist-3a263.firebaseapp.com",
+            projectId: "harishbist-3a263",
+            storageBucket: "harishbist-3a263.appspot.com",
+            messagingSenderId: "816353842957",
+            appId: "1:816353842957:web:5b853c5bed6450fc544244"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (!user) signInAnonymously(auth);
+            else loadAllData();
+        });
+
+        function loadAllData() {
+            // USERS
+            onSnapshot(collection(db, 'users'), (snap) => {
+                const list = document.getElementById('userListBody');
+                list.innerHTML = ""; let uCount = 0;
+                snap.forEach(c => {
+                    uCount++; const u = c.data();
+                    list.innerHTML += `<tr><td>${c.id}</td><td>${u.name || 'No Name'}</td><td>रू ${u.balance || 0}</td><td><div class="btn-group"><button class="action-btn edit-btn" onclick="editBalance('${c.id}',${u.balance || 0})">Edit</button><button class="action-btn reject" onclick="rejectRequest('users', '${c.id}')">Ban</button></div></td></tr>`;
+                });
+                document.getElementById('stat-totalUsers').innerText = uCount;
+            });
+
+            // DEPOSITS (Pending only)
+            const depQuery = query(collection(db, 'deposits'), where('status', '==', 'pending'));
+            onSnapshot(depQuery, (snap) => {
+                const list = document.getElementById('depositListBody');
+                list.innerHTML = ""; let count = 0;
+                snap.forEach(c => {
+                    count++; const d = c.data();
+                    list.innerHTML += `<tr><td>${d.name || d.uid}</td><td>रू ${d.amount}</td><td><img src="${d.screenshot || d.proofUrl}" class="ss-thumb" onclick="zoomImg('${d.screenshot || d.proofUrl}')"></td><td><div class="btn-group"><button class="action-btn approve" onclick="approveDeposit('${c.id}','${d.uid}',${d.amount})">Approve</button><button class="action-btn reject" onclick="rejectRequest('deposits', '${c.id}')">Reject</button></div></td></tr>`;
+                });
+                document.getElementById('stat-pendingDeposit').innerText = count;
+            });
+
+            // WITHDRAWS (Pending only)
+            const withQuery = query(collection(db, 'withdraws'), where('status', '==', 'pending'));
+            onSnapshot(withQuery, (snap) => {
+                const list = document.getElementById('withdrawListBody');
+                list.innerHTML = ""; let count = 0;
+                snap.forEach(c => {
+                    count++; const w = c.data();
+                    list.innerHTML += `<tr><td>${w.uid}</td><td>${w.method}</td><td>${w.wallet}</td><td>रू ${w.amount}</td><td><div class="btn-group"><button class="action-btn approve" onclick="updateStatus('withdraws', '${c.id}', 'completed')">Complete</button><button class="action-btn reject" onclick="rejectWithdraw('${c.id}','${w.uid}',${w.amount})">Reject</button></div></td></tr>`;
+                });
+                document.getElementById('stat-pendingWithdraw').innerText = count;
+            });
+
+            // MATCHES
+            onSnapshot(collection(db, 'matches'), (snap) => {
+                const dList = document.getElementById('matchListBody');
+                const bList = document.getElementById('matchBoxList');
+                dList.innerHTML = ""; bList.innerHTML = ""; let mCount = 0;
+                snap.forEach(c => {
+                    mCount++; const m = c.data();
+                    bList.innerHTML += `<tr><td>${c.id}</td><td>${m.creatorId}</td><td>${m.joinerId || 'Waiting'}</td><td>रू ${m.entry}</td><td>${m.status}</td><td><button class="action-btn reject" onclick="rejectRequest('matches', '${c.id}')">Del</button></td></tr>`;
+                    if(m.status === 'dispute'){
+                        dList.innerHTML += `<tr><td>${c.id}</td><td>C: ${m.creatorId}<br>J: ${m.joinerId}</td><td><img src="${m.creator_proof}" class="ss-thumb" onclick="zoomImg('${m.creator_proof}')"><img src="${m.joiner_proof}" class="ss-thumb" onclick="zoomImg('${m.joiner_proof}')"></td><td>C: ${m.creator_claim}<br>J: ${m.joiner_claim}</td><td><div class="btn-group"><button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.creatorId}',${m.prize})">Win C</button><button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.joinerId}',${m.prize})">Win J</button><button class="action-btn reject" onclick="cancelMatch('${c.id}',${m.entry})">Cancel</button></div></td></tr>`;
+                    }
+                });
+                document.getElementById('stat-matchCount').innerText = mCount;
+            });
+
+            // SETTINGS
+            onSnapshot(doc(db, 'settings', 'global'), (s) => {
+                if(s.exists()){
+                    const data = s.data();
+                    document.getElementById('currentSystemCode').innerText = data.luckySystemCode || '---';
+                    document.getElementById('appLinkInput').value = data.downloadLink || "";
+                    document.getElementById('noticeText').value = data.notice || "";
+                }
+            });
+
+            // LUCKY DRAW HISTORY (Sorted by time)
+            const luckyQuery = query(collection(db, 'luckyDrawHistory'), orderBy('time', 'desc'));
+            onSnapshot(luckyQuery, (s) => {
+                const list = document.getElementById('luckyDrawListBody');
+                list.innerHTML = "";
+                s.forEach(c => {
+                    const d = c.data();
+                    list.innerHTML += `<tr><td>${new Date(d.time).toLocaleString()}</td><td>${d.name}<br><small>${d.uid}</small></td><td>${d.box}</td><td>${d.userNumber}</td><td style="color:${d.result==='WIN'?'green':'red'}">${d.result}</td></tr>`;
+                });
+            });
+        }
+
+        // Firestore Functions
+        window.editBalance = (uid, old) => {
+            const val = prompt("नयाँ ब्यालेन्स हाल्नुहोस्:", old);
+            if(val) updateDoc(doc(db, 'users', uid), { balance: parseFloat(val) });
+        };
+
+        window.approveDeposit = async (id, uid, amt) => {
+            const userRef = doc(db, 'users', uid);
+            await runTransaction(db, async (transaction) => {
+                const userSnap = await transaction.get(userRef);
+                const newBalance = (userSnap.data().balance || 0) + parseFloat(amt);
+                transaction.update(userRef, { balance: newBalance });
+                transaction.update(doc(db, 'deposits', id), { status: 'approved' });
+            });
+            Swal.fire("Success", "डिपोजिट स्वीकृत भयो", "success");
+        };
+
+        window.rejectWithdraw = async (id, uid, amt) => {
+            const userRef = doc(db, 'users', uid);
+            await runTransaction(db, async (transaction) => {
+                const userSnap = await transaction.get(userRef);
+                const newBalance = (userSnap.data().balance || 0) + parseFloat(amt);
+                transaction.update(userRef, { balance: newBalance });
+                transaction.delete(doc(db, 'withdraws', id));
+            });
+            Swal.fire("Rejected", "रकम फिर्ता गरियो", "error");
+        };
+
+        window.finalizeMatch = async (mid, wid, prize) => {
+            const userRef = doc(db, 'users', wid);
+            await runTransaction(db, async (transaction) => {
+                const userSnap = await transaction.get(userRef);
+                const newBalance = (userSnap.data().balance || 0) + parseFloat(prize);
+                transaction.update(userRef, { balance: newBalance });
+                transaction.update(doc(db, 'matches', mid), { status: 'completed', winnerId: wid });
+            });
+            Swal.fire("Success", "बिजेता घोषित भयो", "success");
+        };
+
+        window.cancelMatch = async (mid, entry) => {
+            const mRef = doc(db, 'matches', mid);
+            const mSnap = await getDoc(mRef);
+            const m = mSnap.data();
+            
+            await runTransaction(db, async (transaction) => {
+                const cRef = doc(db, 'users', m.creatorId);
+                const cSnap = await transaction.get(cRef);
+                transaction.update(cRef, { balance: (cSnap.data().balance || 0) + parseFloat(entry) });
+
+                if(m.joinerId) {
+                    const jRef = doc(db, 'users', m.joinerId);
+                    const jSnap = await transaction.get(jRef);
+                    transaction.update(jRef, { balance: (jSnap.data().balance || 0) + parseFloat(entry) });
+                }
+                transaction.delete(mRef);
+            });
+            Swal.fire("Cancelled", "म्याच रद्द भयो", "info");
+        };
+
+        window.updateLuckyCode = () => {
+            const code = document.getElementById('luckyCodeInput').value;
+            setDoc(doc(db, 'settings', 'global'), { luckySystemCode: code }, { merge: true }).then(() => Swal.fire("Updated", "कोड सेभ भयो", "success"));
+        };
+
+        window.saveSettings = () => {
+            updateDoc(doc(db, 'settings', 'global'), { notice: document.getElementById('noticeText').value, downloadLink: document.getElementById('appLinkInput').value }).then(() => Swal.fire("Saved", "सेटिंग्स सेभ भयो", "success"));
+        };
+
+        window.updateStatus = (coll, id, s) => updateDoc(doc(db, coll, id), { status: s });
+        window.rejectRequest = (coll, id) => confirm("Are you sure?") && deleteDoc(doc(db, coll, id));
+
+        // UI Functions remain the same
+        window.showSection = (id) => {
+            document.querySelectorAll('.main-content > div').forEach(d => d.classList.add('hidden'));
+            document.getElementById('section-' + id).classList.remove('hidden');
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            if(window.innerWidth <= 768) toggleSidebar();
+        };
+        window.toggleSidebar = () => {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('active');
+        };
+        window.zoomImg = (url) => url && Swal.fire({ imageUrl: url, imageAlt: 'Proof' });
+        window.filterUsers = () => {
+            let input = document.getElementById("userSearchInput").value.toUpperCase();
+            let tr = document.getElementById("userListBody").getElementsByTagName("tr");
+            for (let i = 0; i < tr.length; i++) {
+                tr[i].style.display = tr[i].innerText.toUpperCase().includes(input) ? "" : "none";
+            }
+        };
+    </script>
+</body>
+</html>

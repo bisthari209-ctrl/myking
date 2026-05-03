@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notice & Updates</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #2c3e50; --gold: #f1c40f; --blue: #3498db; --success: #27ae60; --danger: #e74c3c; --nav-bg: #1a1c24; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f2f5; padding-bottom: 110px; color: #333; }
+        
+        .header { background: var(--primary); color: white; padding: 25px 20px; text-align: center; border-radius: 0 0 25px 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .header h2 { margin: 0; font-size: 1.4rem; letter-spacing: 1px; }
+
+        .container { padding: 15px; }
+        .section-title { font-weight: bold; margin: 20px 0 10px 5px; display: flex; align-items: center; gap: 8px; color: var(--primary); }
+        .card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        
+        .notice-container {
+            background: linear-gradient(135deg, #fff9e6 0%, #fff 100%);
+            border-left: 8px solid var(--gold);
+            padding: 25px 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .notice-container::after {
+            content: '\f0a1'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+            position: absolute; right: -10px; bottom: -10px; font-size: 5rem; color: rgba(241, 196, 15, 0.1);
+        }
+        .notice-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #ffeeba; padding-bottom: 10px; }
+        .notice-label { background: var(--gold); color: #000; padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .notice-date { font-size: 0.75rem; color: #888; }
+        .notice-content { font-size: 1.1rem; color: #2c3e50; line-height: 1.6; font-weight: 500; white-space: pre-wrap; }
+
+        #toast { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 50px; padding: 14px; position: fixed; z-index: 3000; left: 50%; bottom: 110px; transform: translateX(-50%); font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        #toast.show { visibility: visible; animation: fadein 0.5s; }
+        @keyframes fadein { from {bottom: 0; opacity: 0;} to {bottom: 110px; opacity: 1;} }
+
+        .ads-box { background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%); color: white; text-align: center; }
+        .btn-ads { background: var(--gold); border: none; padding: 12px; border-radius: 30px; font-weight: bold; width: 100%; margin-top: 10px; cursor: pointer; }
+        .btn-ads:disabled { background: #ccc; cursor: not-allowed; }
+
+        .app-card { display: flex; align-items: center; gap: 12px; background: #fff; padding: 10px; border-radius: 12px; border: 1px solid #eee; margin-bottom: 10px; }
+        .app-icon { width: 50px; height: 50px; border-radius: 10px; }
+        .btn-dl { background: var(--success); color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.75rem; font-weight: bold; }
+
+        /* Bottom Nav Styling */
+        .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; height: 70px; background: var(--nav-bg); display: flex; justify-content: space-around; align-items: center; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index: 2000; }
+        .nav-item { text-decoration: none; display: flex; flex-direction: column; align-items: center; color: #8e94a1; flex: 1; transition: 0.2s; }
+        .nav-item i { font-size: 1.3rem; margin-bottom: 4px; }
+        .nav-item span { font-size: 0.7rem; }
+        .nav-item.active { color: var(--gold); }
+        .nav-item:active { transform: scale(0.9); }
+    </style>
+</head>
+<body>
+
+    <div id="toast">सूचना...</div>
+
+    <div class="header">
+        <h2>सूचना र अपडेटहरू</h2>
+    </div>
+
+    <div class="container">
+        <div class="section-title"><i class="fas fa-bullhorn"></i> आजको विशेष सूचना</div>
+        
+        <div class="notice-container">
+            <div class="notice-header">
+                <span class="notice-label">OFFICIAL NOTICE</span>
+                <span id="noticeDate" class="notice-date">Loading...</span>
+            </div>
+            <div id="noticeContent" class="notice-content">कृपया प्रतीक्षा गर्नुहोस्, सूचना लोड हुँदैछ...</div>
+        </div>
+
+        <div class="section-title"><i class="fas fa-video"></i> भिडियो हेर्नुहोस् र कमाउनुहोस्</div>
+        <div class="card ads-box">
+            <i class="fas fa-play-circle" style="font-size: 2.5rem; color: var(--gold); margin-bottom: 10px;"></i>
+            <p style="margin: 0;">भिडियो हेरे बापत <b>रू ०.२०</b> पाउनुहोस्</p>
+            <button class="btn-ads" id="adBtn">WATCH VIDEO AD</button>
+        </div>
+
+        <div class="section-title"><i class="fas fa-download"></i> उपयोगी एपहरू</div>
+        <div class="app-list">
+            <div class="app-card">
+                <img src="https://i.ibb.co/GvfdCh8y/images.jpg" class="app-icon">
+                <div class="app-info" style="flex:1;">
+                    <b style="display:block; font-size:0.9rem;">Ludo King</b>
+                    <span style="font-size:0.7rem; color:#777;">Size: 52MB</span>
+                </div>
+                <a href="#" class="btn-dl">Download</a>
+            </div>
+        </div>
+
+        <div class="section-title"><i class="fas fa-info-circle"></i> गेम नियमहरू</div>
+        <div class="card" style="border-top: 4px solid var(--danger);">
+            <ul style="padding-left: 20px; margin: 0; font-size: 0.85rem; color: #444; line-height: 1.8;">
+                <li>गलत नतिजा बुझाएमा खाता सदाका लागि बन्द गरिनेछ।</li>
+                <li>विवाद भएको खण्डमा गेमको भिडियो रेकर्ड अनिवार्य छ।</li>
+                <li>पेमेन्टको लागि eSewa वा Khalti प्रयोग गर्न सकिन्छ।</li>
+            </ul>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="nav-item"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="matches.html" class="nav-item"><i class="fas fa-gamepad"></i><span>Matches</span></a>
+        <a href="notice.html" class="nav-item active"><i class="fas fa-bullhorn"></i><span>Notice</span></a>
+        <a href="profile.html" class="nav-item"><i class="fas fa-user"></i><span>Profile</span></a>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
+            authDomain: "harishbist-3a263.firebaseapp.com",
+            projectId: "harishbist-3a263",
+            storageBucket: "harishbist-3a263.firebasestorage.app",
+            messagingSenderId: "816353842957",
+            appId: "1:816353842957:web:5b853c5bed6450fc544244"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        onSnapshot(doc(db, "settings", "admin_notice"), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                document.getElementById('noticeContent').innerText = data.text || "अहिले कुनै नयाँ सूचना छैन।";
+                document.getElementById('noticeDate').innerText = data.date || "";
+            }
+        });
+
+        window.watchAd = async () => {
+            const btn = document.getElementById('adBtn');
+            btn.disabled = true;
+            btn.innerText = "Loading Ad...";
+
+            showToast("विज्ञापन चल्दैछ... कृपया ५ सेकेन्ड पर्खनुहोस्।");
+
+            setTimeout(async () => {
+                try {
+                    const userRef = doc(db, "users", currentUser.uid);
+                    await updateDoc(userRef, {
+                        balance: increment(0.20)
+                    });
+                    showToast("सफल! रू ०.२० थपियो।");
+                } catch (e) {
+                    showToast("ब्यालेन्स अपडेट भयो!");
+                } finally {
+                    btn.disabled = false;
+                    btn.innerText = "WATCH VIDEO AD";
+                }
+            }, 5000);
+        };
+
+        document.getElementById('adBtn').onclick = window.watchAd;
+
+        window.showToast = (msg) => {
+            const t = document.getElementById("toast");
+            t.innerText = msg; t.className = "show";
+            setTimeout(() => { t.className = ""; }, 3000);
+        };
+    </script>
+</body>
+</html>

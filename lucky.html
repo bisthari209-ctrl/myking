@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lucky Draw Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root { --primary: #1a1c24; --gold: #f1c40f; --accent: #e74c3c; --success: #27ae60; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f4f7f6; color: #333; padding-bottom: 30px; }
+        
+        .header { background: var(--primary); color: white; padding: 25px 15px; text-align: center; border-radius: 0 0 25px 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; }
+        .balance-chip { background: rgba(255,255,255,0.1); display: inline-flex; align-items: center; gap: 8px; padding: 8px 18px; border-radius: 50px; margin-top: 10px; border: 1px solid var(--gold); }
+
+        .container { padding: 20px 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        .lucky-box {
+            background: white; border-radius: 20px; overflow: hidden; position: relative;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08); border: 1px solid #eee; text-align: center;
+            padding: 20px 10px; transition: 0.3s;
+        }
+        .lucky-box:active { transform: scale(0.95); }
+
+        .box-icon { font-size: 3rem; margin-bottom: 10px; display: block; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1)); }
+        .box-title { font-weight: bold; font-size: 0.9rem; color: #444; }
+        .box-price { font-size: 1.1rem; font-weight: 800; color: #333; margin: 5px 0; }
+        .box-prize { font-size: 0.85rem; color: var(--success); font-weight: bold; margin-bottom: 10px; display: block; }
+        
+        .btn-join {
+            background: linear-gradient(135deg, #f39c12, #e67e22); color: white;
+            border: none; padding: 12px; border-radius: 12px; font-weight: bold;
+            cursor: pointer; width: 100%; margin-top: 5px;
+        }
+
+        .history-card { background: white; margin: 15px; border-radius: 15px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .history-card h3 { margin-top: 0; font-size: 1rem; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #f9f9f9; }
+        .win-text { color: var(--success); font-weight: bold; }
+        .loss-text { color: var(--accent); font-weight: bold; }
+
+        .box-5 { border-top: 5px solid #3498db; }
+        .box-20 { border-top: 5px solid #9b59b6; }
+        .box-50 { border-top: 5px solid #f1c40f; }
+        .box-100 { border-top: 5px solid #e74c3c; }
+
+        .back-btn { position: absolute; left: 15px; top: 25px; color: white; font-size: 1.2rem; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <a href="dashboard.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+        <h2 style="margin:0;">Lucky Box Draw</h2>
+        <div class="balance-chip">
+            <i class="fas fa-wallet" style="color:var(--gold);"></i>
+            <span id="userBalanceDisplay">रू 0.00</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="lucky-box box-5">
+            <span class="box-icon">🎁</span>
+            <div class="box-title">Bronze Box</div>
+            <div class="box-price">Entry: रू 5</div>
+            <span class="box-prize">Win: रू 50</span>
+            <button class="btn-join" onclick="handleJoinRequest(5, 50, 'Bronze')">JOIN NOW</button>
+        </div>
+
+        <div class="lucky-box box-20">
+            <span class="box-icon">💎</span>
+            <div class="box-title">Silver Box</div>
+            <div class="box-price">Entry: रू 20</div>
+            <span class="box-prize">Win: रू 80</span>
+            <button class="btn-join" onclick="handleJoinRequest(20, 80, 'Silver')">JOIN NOW</button>
+        </div>
+
+        <div class="lucky-box box-50">
+            <span class="box-icon">👑</span>
+            <div class="box-title">Gold Box</div>
+            <div class="box-price">Entry: रू 50</div>
+            <span class="box-prize">Win: रू 130</span>
+            <button class="btn-join" onclick="handleJoinRequest(50, 130, 'Gold')">JOIN NOW</button>
+        </div>
+
+        <div class="lucky-box box-100">
+            <span class="box-icon">🔥</span>
+            <div class="box-title">Diamond Box</div>
+            <div class="box-price">Entry: रू 100</div>
+            <span class="box-prize">Win: रू 200</span>
+            <button class="btn-join" onclick="handleJoinRequest(100, 200, 'Diamond')">JOIN NOW</button>
+        </div>
+    </div>
+
+    <div class="history-card">
+        <h3><i class="fas fa-history"></i> My Draw History</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Box</th>
+                    <th>Number</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody id="historyBody">
+                <tr><td colspan="3" style="text-align:center;">लोड हुँदैछ...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc, collection, addDoc, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
+            authDomain: "harishbist-3a263.firebaseapp.com",
+            projectId: "harishbist-3a263",
+            storageBucket: "harishbist-3a263.firebasestorage.app",
+            messagingSenderId: "816353842957",
+            appId: "1:816353842957:web:5b853c5bed6450fc544244"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let userBalance = 0;
+
+        // १. अथेन्टिकेसन र ब्यालेन्स लोडिङ
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                onSnapshot(doc(db, "users", user.uid), (snap) => {
+                    if(snap.exists()) {
+                        userBalance = snap.data().balance || 0;
+                        document.getElementById('userBalanceDisplay').innerText = "रू " + userBalance.toFixed(2);
+                    }
+                });
+                loadHistory();
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        // २. ड्र हिस्ट्री लोड गर्ने
+        function loadHistory() {
+            const q = query(
+                collection(db, "lucky_draws"), 
+                where("uid", "==", currentUser.uid),
+                orderBy("timestamp", "desc"),
+                limit(10)
+            );
+
+            onSnapshot(q, (snapshot) => {
+                const tbody = document.getElementById('historyBody');
+                tbody.innerHTML = "";
+                if (snapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">विवरण खाली छ</td></tr>';
+                    return;
+                }
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    tbody.innerHTML += `<tr>
+                        <td>${data.boxName}</td>
+                        <td>${data.selectedNumber}</td>
+                        <td class="${data.result === 'WIN' ? 'win-text' : 'loss-text'}">${data.result}</td>
+                    </tr>`;
+                });
+            });
+        }
+
+        // ३. ड्र जोइन गर्ने लोजिक
+        window.handleJoinRequest = async (fee, winPrize, boxName) => {
+            if (userBalance < fee) {
+                return Swal.fire('Error', 'तपाईँको ब्यालेन्स पुगेन!', 'error');
+            }
+
+            const { value: userNumber } = await Swal.fire({
+                title: boxName + ' Box Entry',
+                input: 'number',
+                inputLabel: 'कुनै ५ अंकको नम्बर हाल्नुहोस् (०-९९९९९)',
+                inputPlaceholder: '12345',
+                showCancelButton: true,
+                confirmButtonText: 'Submit & Pay',
+                confirmButtonColor: '#e67e22',
+            });
+
+            if (userNumber) {
+                Swal.fire({ title: 'जाँच गर्दै...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+                // १/१० सम्भावना (Win Probability)
+                const isWin = Math.random() > 0.9;
+                const result = isWin ? "WIN" : "LOSS";
+                const newBalance = isWin ? (userBalance - fee + winPrize) : (userBalance - fee);
+
+                try {
+                    // Firestore मा डाटा अपडेट गर्ने
+                    await updateDoc(doc(db, "users", currentUser.uid), { balance: newBalance });
+                    await addDoc(collection(db, "lucky_draws"), {
+                        uid: currentUser.uid,
+                        boxName: boxName,
+                        selectedNumber: userNumber,
+                        result: result,
+                        timestamp: serverTimestamp()
+                    });
+
+                    Swal.close();
+                    if (isWin) {
+                        Swal.fire('बधाई छ!', `तपाईँले रू ${winPrize} जित्नुभयो!`, 'success');
+                    } else {
+                        Swal.fire('मिलेन!', `यो पटक हारियो, अर्को पटक प्रयास गर्नुहोला।`, 'error');
+                    }
+                } catch (e) {
+                    Swal.fire('Error', 'सिस्टममा केही समस्या आयो!', 'error');
+                }
+            }
+        };
+    </script>
+</body>
+</html>

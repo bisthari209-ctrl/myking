@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match Center - Premium Color Tabs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { 
+            --bg-dark: #0f172a; --card-bg: #1e293b; --gold: #fbbf24; 
+            --text-main: #f8fafc; --text-dim: #94a3b8; --border-gold: rgba(251, 191, 36, 0.3);
+            --color-join: #22c55e; --color-mine: #3b82f6; --color-waiting: #f59e0b; --color-result: #ec4899; 
+        }
+
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-dark); color: var(--text-main); padding-bottom: 90px; }
+        
+        #toast { 
+            visibility: hidden; min-width: 250px; background-color: #1e293b; color: var(--gold); 
+            text-align: center; border-radius: 15px; padding: 20px; position: fixed; 
+            z-index: 5000; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.7); 
+            border: 2px solid var(--gold); box-shadow: 0 0 30px rgba(0, 0, 0, 0.6); 
+            font-weight: bold; opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #toast.show { visibility: visible; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        .tabs { display: flex; background: #111827; position: sticky; top: 0; z-index: 1000; overflow-x: auto; padding: 5px; gap: 5px; }
+        .tab { 
+            flex: 1; padding: 14px 10px; text-align: center; cursor: pointer; 
+            font-weight: 800; font-size: 0.7rem; white-space: nowrap; 
+            text-transform: uppercase; transition: 0.3s; border-radius: 10px;
+            color: white; opacity: 0.5; border: 1px solid rgba(255,255,255,0.1);
+        }
+        #tab-open { background: var(--color-join); }
+        #tab-mine { background: var(--color-mine); }
+        #tab-waiting { background: var(--color-waiting); }
+        #tab-result { background: var(--color-result); }
+        .tab.active { opacity: 1; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transform: translateY(-2px); border: 2px solid white; }
+
+        .container { padding: 15px; }
+        .match-card { background: var(--card-bg); border-radius: 20px; padding: 18px; margin-bottom: 20px; border: 1px solid var(--border-gold); position: relative; }
+        .match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; }
+        .game-name { font-weight: 800; color: var(--gold); font-size: 1.1rem; }
+        .entry-fee { background: rgba(251, 191, 36, 0.1); color: var(--gold); padding: 4px 12px; border-radius: 99px; border: 1px solid var(--gold); font-weight: 700; font-size: 0.8rem; }
+        .match-body { font-size: 0.9rem; color: var(--text-dim); }
+        .btn-group { margin-top: 15px; display: flex; gap: 10px; }
+        .action-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; cursor: pointer; font-weight: 800; color: white; text-align: center; font-size: 0.8rem; text-transform: uppercase; }
+        .join-btn { background: linear-gradient(to right, #22c55e, #16a34a); }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Bottom Nav Styling */
+        .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(30, 41, 59, 0.95); display: flex; justify-content: space-around; padding: 12px 0; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); z-index: 1000; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+        .nav-item { text-align: center; color: var(--text-dim); font-size: 0.7rem; text-decoration: none; font-weight: 600; flex: 1; }
+        .nav-item.active { color: var(--gold); }
+        .nav-item i { font-size: 1.3rem; margin-bottom: 4px; display: block; }
+        .nav-item:active { transform: scale(0.9); transition: 0.2s; }
+    </style>
+</head>
+<body>
+
+    <div id="toast">सूचना...</div>
+
+    <div class="tabs">
+        <div class="tab active" id="tab-open" onclick="switchTab('open')"><i class="fas fa-plus-circle"></i> Join</div>
+        <div class="tab" id="tab-mine" onclick="switchTab('mine')"><i class="fas fa-user-tag"></i> Mine</div>
+        <div class="tab" id="tab-waiting" onclick="switchTab('waiting')"><i class="fas fa-clock"></i> Waiting</div>
+        <div class="tab" id="tab-result" onclick="switchTab('result')"><i class="fas fa-trophy"></i> Result</div>
+    </div>
+
+    <div class="container">
+        <div id="matchList">
+            <p style="text-align:center; color:gray; margin-top:50px;">लोड हुँदैछ...</p>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="dashboard.html" class="nav-item"><i class="fas fa-home"></i>Home</a>
+        <a href="matches.html" class="nav-item active"><i class="fas fa-gamepad"></i>Matches</a>
+        <a href="notice.html" class="nav-item"><i class="fas fa-bullhorn"></i>Notice</a>
+        <a href="profile.html" class="nav-item"><i class="fas fa-user"></i>Profile</a>
+    </nav>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
+            authDomain: "harishbist-3a263.firebaseapp.com",
+            projectId: "harishbist-3a263",
+            storageBucket: "harishbist-3a263.firebasestorage.app",
+            messagingSenderId: "816353842957",
+            appId: "1:816353842957:web:5b853c5bed6450fc544244"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let userBalance = 0;
+        let currentTab = 'open';
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                onSnapshot(doc(db, "users", user.uid), (snap) => {
+                    if(snap.exists()) userBalance = snap.data().balance;
+                });
+                loadMatches();
+            } else {
+                window.location.href = "login.html";
+            }
+        });
+
+        window.switchTab = (tab) => {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            loadMatches();
+        };
+
+        function loadMatches() {
+            const list = document.getElementById('matchList');
+            list.innerHTML = `<p style="text-align:center; color:gray;">म्याचहरू खोज्दै...</p>`;
+
+            let q;
+            const matchesRef = collection(db, "matches");
+
+            if (currentTab === 'open') {
+                q = query(matchesRef, where("status", "==", "waiting"), where("createdBy", "!=", currentUser.uid));
+            } else if (currentTab === 'mine') {
+                q = query(matchesRef, where("createdBy", "==", currentUser.uid));
+            } else if (currentTab === 'waiting') {
+                q = query(matchesRef, where("joinedBy", "==", currentUser.uid), where("status", "==", "joined"));
+            } else {
+                q = query(matchesRef, where("status", "==", "result"));
+            }
+
+            onSnapshot(q, (snapshot) => {
+                list.innerHTML = "";
+                if (snapshot.empty) {
+                    list.innerHTML = `<p style="text-align:center; color:gray; margin-top:30px;">कुनै म्याच भेटिएन।</p>`;
+                    return;
+                }
+
+                snapshot.forEach((matchDoc) => {
+                    const match = matchDoc.data();
+                    const winPrize = (match.entryFee * 2) * 0.85;
+
+                    const card = document.createElement('div');
+                    card.className = "match-card";
+                    card.innerHTML = `
+                        <div class="match-header">
+                            <span class="game-name">${match.game}</span>
+                            <span class="entry-fee">रू ${match.entryFee}</span>
+                        </div>
+                        <div class="match-body">
+                            <b>WIN PRIZE:</b> <span style="color:white">रू ${winPrize.toFixed(0)}</span><br>
+                            <b>CREATOR:</b> ${match.playerName || 'Anonymous'}
+                        </div>
+                        <div class="btn-group">
+                            ${currentTab === 'open' ? `<button class="action-btn join-btn" onclick="joinMatch('${matchDoc.id}', ${match.entryFee})">JOIN NOW</button>` : ''}
+                            ${currentTab === 'mine' ? `<button class="action-btn" style="background:gray;" disabled>WAITING FOR PLAYER</button>` : ''}
+                            ${currentTab === 'waiting' ? `<button class="action-btn" style="background:#f59e0b;">VIEW ROOM CODE</button>` : ''}
+                        </div>
+                    `;
+                    list.appendChild(card);
+                });
+            });
+        }
+
+        window.joinMatch = async (matchId, fee) => {
+            if (userBalance < fee) return showToast("ब्यालेन्स पुगेन!");
+            try {
+                await updateDoc(doc(db, "matches", matchId), {
+                    joinedBy: currentUser.uid,
+                    status: "joined"
+                });
+                await updateDoc(doc(db, "users", currentUser.uid), {
+                    balance: userBalance - fee
+                });
+                showToast("सफलतापूर्वक जोइन हुनुभयो!");
+            } catch (err) {
+                showToast("गल्ती भयो!");
+            }
+        };
+
+        window.showToast = (msg) => {
+            const t = document.getElementById("toast");
+            t.innerText = msg; 
+            t.classList.add("show");
+            setTimeout(() => { t.classList.remove("show"); }, 3000);
+        };
+    </script>
+</body>
+</html>

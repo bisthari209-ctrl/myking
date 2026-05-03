@@ -46,7 +46,11 @@
         .chat-btn { background: #6366f1; }
         .room-btn { background: #f59e0b; }
 
-        .room-box { background: rgba(251, 191, 36, 0.1); border: 1px dashed var(--gold); padding: 10px; border-radius: 10px; margin-top: 10px; text-align: center; color: var(--gold); font-weight: bold; }
+        /* Room code styles updated */
+        .room-box { background: rgba(251, 191, 36, 0.1); border: 1px dashed var(--gold); padding: 12px; border-radius: 10px; margin-top: 10px; text-align: center; color: var(--gold); font-weight: bold; cursor: pointer; transition: 0.2s; position: relative; }
+        .room-box:active { background: rgba(251, 191, 36, 0.3); transform: scale(0.98); }
+        .room-box i { margin-right: 5px; }
+
         .status-badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 5px; font-weight: bold; text-transform: uppercase; }
         .badge-win { background: #22c55e; color: white; }
         .badge-loss { background: #ef4444; color: white; }
@@ -172,12 +176,8 @@
                     const matchId = matchDoc.id;
                     const userSubmitted = match[`result_${currentUser.uid}`];
 
-                    // Logic: Waiting ट्याबमा छ तर नतिजा बुझाइसक्यो भने यहाँ नदेखाउने (Result मा पठाउने)
                     if (currentTab === 'waiting' && userSubmitted) return;
-                    
-                    // Logic: Result ट्याबमा छ तर नतिजा बुझाएको छैन भने यहाँ नदेखाउने
                     if (currentTab === 'result' && !userSubmitted && match.status !== 'result') return;
-
                     if (currentTab === 'open' && match.createdBy === currentUser.uid) return;
 
                     count++;
@@ -186,7 +186,8 @@
                     card.className = "match-card";
                     
                     let actionButtons = "";
-                    let roomDisplay = match.roomCode ? `<div class="room-box">ROOM CODE: ${match.roomCode}</div>` : "";
+                    // Updated roomDisplay with onclick copy
+                    let roomDisplay = match.roomCode ? `<div class="room-box" onclick="copyRoomCode('${match.roomCode}')"><i class="fas fa-copy"></i> ROOM CODE: ${match.roomCode}</div>` : "";
                     let statusInfo = "";
 
                     if (currentTab === 'open') {
@@ -230,6 +231,22 @@
                 if(count === 0) list.innerHTML = `<p style="text-align:center; color:gray; margin-top:30px;">डाटा छैन।</p>`;
             });
         }
+
+        // Copy Room Code Function
+        window.copyRoomCode = (code) => {
+            navigator.clipboard.writeText(code).then(() => {
+                showToast("रूम कोड कपी भयो: " + code);
+            }).catch(err => {
+                // Fallback for older devices
+                const el = document.createElement('textarea');
+                el.value = code;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                showToast("रूम कोड कपी भयो: " + code);
+            });
+        };
 
         async function checkAutoApprove(matchId) {
             const matchRef = doc(db, "matches", matchId);
@@ -334,7 +351,7 @@
                         
                         await checkAutoApprove(matchId);
                         showToast("नतिजा बुझाइयो!");
-                        switchTab('result'); // नतिजा बुझाएपछि सिधै Result ट्याबमा लाने
+                        switchTab('result');
                     } else {
                         throw new Error("ImgBB Upload Failed");
                     }

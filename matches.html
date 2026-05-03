@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match Center - Premium Color Tabs</title>
+    <title>Match Center | Mero Ludo</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { 
@@ -47,12 +47,10 @@
         .join-btn { background: linear-gradient(to right, #22c55e, #16a34a); }
         .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Bottom Nav Styling */
         .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(30, 41, 59, 0.95); display: flex; justify-content: space-around; padding: 12px 0; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); z-index: 1000; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
         .nav-item { text-align: center; color: var(--text-dim); font-size: 0.7rem; text-decoration: none; font-weight: 600; flex: 1; }
         .nav-item.active { color: var(--gold); }
         .nav-item i { font-size: 1.3rem; margin-bottom: 4px; display: block; }
-        .nav-item:active { transform: scale(0.9); transition: 0.2s; }
     </style>
 </head>
 <body>
@@ -82,7 +80,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
@@ -124,14 +122,18 @@
             const list = document.getElementById('matchList');
             list.innerHTML = `<p style="text-align:center; color:gray;">म्याचहरू खोज्दै...</p>`;
 
-            let q;
             const matchesRef = collection(db, "matches");
+            let q;
 
+            // म्याच देखाउने मुख्य लजिकमा सुधार
             if (currentTab === 'open') {
-                q = query(matchesRef, where("status", "==", "waiting"), where("createdBy", "!=", currentUser.uid));
+                // यहाँ createdBy != currentUser हटाउनुहोस् किनकि यसले Index मा समस्या दिन्छ।
+                // यसको सट्टा सबै waiting म्याचहरू तान्ने र लुपभित्र आफ्नो हो कि होइन फिल्टर गर्ने।
+                q = query(matchesRef, where("status", "==", "waiting"));
             } else if (currentTab === 'mine') {
                 q = query(matchesRef, where("createdBy", "==", currentUser.uid));
             } else if (currentTab === 'waiting') {
+                // म्याच जोइन गरिसकेपछि तर गेम सुरु नहुँदैको अवस्था
                 q = query(matchesRef, where("joinedBy", "==", currentUser.uid), where("status", "==", "joined"));
             } else {
                 q = query(matchesRef, where("status", "==", "result"));
@@ -139,6 +141,8 @@
 
             onSnapshot(q, (snapshot) => {
                 list.innerHTML = "";
+                let foundMatches = 0;
+
                 if (snapshot.empty) {
                     list.innerHTML = `<p style="text-align:center; color:gray; margin-top:30px;">कुनै म्याच भेटिएन।</p>`;
                     return;
@@ -146,44 +150,81 @@
 
                 snapshot.forEach((matchDoc) => {
                     const match = matchDoc.data();
-                    const winPrize = (match.entryFee * 2) * 0.85;
+                    
+                    // 'Join' ट्याबमा आफ्नै म्याच नदेखाउने फिल्टर
+                    if (currentTab === 'open' && match.createdBy === currentUser.uid) return;
+
+                    foundMatches++;
+                    const winPrize = (match.entryFee * 2) * 0.85; // १५% कमिसन काटेर
 
                     const card = document.createElement('div');
                     card.className = "match-card";
                     card.innerHTML = `
                         <div class="match-header">
-                            <span class="game-name">${match.game}</span>
+                            <span class="game-name">${match.game || 'Ludo Classic'}</span>
                             <span class="entry-fee">रू ${match.entryFee}</span>
                         </div>
                         <div class="match-body">
-                            <b>WIN PRIZE:</b> <span style="color:white">रू ${winPrize.toFixed(0)}</span><br>
-                            <b>CREATOR:</b> ${match.playerName || 'Anonymous'}
+                            <b>WIN PRIZE:</b> <span style="color:var(--gold)">रू ${winPrize.toFixed(0)}</span><br>
+                            <b>CREATOR:</b> ${match.playerName || 'Gamer'}
                         </div>
                         <div class="btn-group">
                             ${currentTab === 'open' ? `<button class="action-btn join-btn" onclick="joinMatch('${matchDoc.id}', ${match.entryFee})">JOIN NOW</button>` : ''}
-                            ${currentTab === 'mine' ? `<button class="action-btn" style="background:gray;" disabled>WAITING FOR PLAYER</button>` : ''}
-                            ${currentTab === 'waiting' ? `<button class="action-btn" style="background:#f59e0b;">VIEW ROOM CODE</button>` : ''}
+                            ${currentTab === 'mine' ? `<button class="action-btn" style="background:#475569;" disabled><i class="fas fa-spinner fa-spin"></i> WAITING...</button>` : ''}
+                            ${currentTab === 'waiting' ? `<button class="action-btn" style="background:var(--color-waiting);" onclick="viewRoom('${matchDoc.id}')">VIEW ROOM CODE</button>` : ''}
                         </div>
                     `;
                     list.appendChild(card);
                 });
+
+                if (foundMatches === 0) {
+                    list.innerHTML = `<p style="text-align:center; color:gray; margin-top:30px;">अहिले कुनै उपलब्ध म्याच छैन।</p>`;
+                }
             });
         }
 
         window.joinMatch = async (matchId, fee) => {
-            if (userBalance < fee) return showToast("ब्यालेन्स पुगेन!");
-            try {
-                await updateDoc(doc(db, "matches", matchId), {
-                    joinedBy: currentUser.uid,
-                    status: "joined"
-                });
-                await updateDoc(doc(db, "users", currentUser.uid), {
-                    balance: userBalance - fee
-                });
-                showToast("सफलतापूर्वक जोइन हुनुभयो!");
-            } catch (err) {
-                showToast("गल्ती भयो!");
+            if (userBalance < fee) {
+                showToast("ब्यालेन्स पुगेन! कृपया रिचार्ज गर्नुहोस्।");
+                return;
             }
+
+            Swal.fire({
+                title: 'Join Match?',
+                text: `के तपाईं रू ${fee} तिरेर यो म्याच खेल्न चाहनुहुन्छ?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#22c55e',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: 'हो, जोइन गर्छु'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        // म्याच अपडेट गर्ने
+                        await updateDoc(doc(db, "matches", matchId), {
+                            joinedBy: currentUser.uid,
+                            joinedName: auth.currentUser.displayName || "Player 2",
+                            status: "joined"
+                        });
+                        
+                        // ब्यालेन्स घटाउने
+                        await updateDoc(doc(db, "users", currentUser.uid), {
+                            balance: userBalance - fee
+                        });
+                        
+                        showToast("बधाई छ! तपाईं म्याचमा जोइन हुनुभयो।");
+                        switchTab('waiting');
+                    } catch (err) {
+                        console.error(err);
+                        showToast("गल्ती भयो! फेरि प्रयास गर्नुहोस्।");
+                    }
+                }
+            });
+        };
+
+        window.viewRoom = (matchId) => {
+            // यहाँ रुम कोड देखाउने लजिक वा अर्को पेजमा पठाउने लजिक राख्न सकिन्छ
+            showToast("रुम कोड अहिले उपलब्ध छैन। वेट गर्नुहोस्।");
         };
 
         window.showToast = (msg) => {
@@ -193,5 +234,6 @@
             setTimeout(() => { t.classList.remove("show"); }, 3000);
         };
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>

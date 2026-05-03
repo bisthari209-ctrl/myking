@@ -180,9 +180,30 @@
                 dList.innerHTML = ""; bList.innerHTML = ""; let mCount = 0;
                 snap.forEach(c => {
                     mCount++; const m = c.data();
-                    bList.innerHTML += `<tr><td>${c.id}</td><td>${m.creatorId}</td><td>${m.joinerId || 'Waiting'}</td><td>रू ${m.entry}</td><td>${m.status}</td><td><button class="action-btn reject" onclick="rejectRequest('matches', '${c.id}')">Del</button></td></tr>`;
-                    if(m.status === 'dispute'){
-                        dList.innerHTML += `<tr><td>${c.id}</td><td>C: ${m.creatorId}<br>J: ${m.joinerId}</td><td><img src="${m.creator_proof}" class="ss-thumb" onclick="zoomImg('${m.creator_proof}')"><img src="${m.joiner_proof}" class="ss-thumb" onclick="zoomImg('${m.joiner_proof}')"></td><td>C: ${m.creator_claim}<br>J: ${m.joiner_claim}</td><td><div class="btn-group"><button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.creatorId}',${m.prize})">Win C</button><button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.joinerId}',${m.prize})">Win J</button><button class="action-btn reject" onclick="cancelMatch('${c.id}',${m.entry})">Cancel</button></div></td></tr>`;
+                    const entryFee = m.entryFee || m.entry || 0;
+                    const winPrize = m.winPrize || (entryFee * 2 * 0.85);
+
+                    bList.innerHTML += `<tr><td>${c.id}</td><td>${m.createdBy || m.creatorId}</td><td>${m.joinedBy || m.joinerId || 'Waiting'}</td><td>रू ${entryFee}</td><td>${m.status}</td><td><button class="action-btn reject" onclick="rejectRequest('matches', '${c.id}')">Del</button></td></tr>`;
+                    
+                    // DISPUTE म्याचहरू यहाँ देखाउने
+                    if(m.status === 'dispute' || m.status === 'disputed'){
+                        dList.innerHTML += `
+                        <tr>
+                            <td>${c.id}</td>
+                            <td>C: ${m.createdBy || m.creatorId}<br>J: ${m.joinedBy || m.joinerId}</td>
+                            <td>
+                                <img src="${m.proof_creator || m.creator_proof}" class="ss-thumb" onclick="zoomImg('${m.proof_creator || m.creator_proof}')" onerror="this.style.display='none'">
+                                <img src="${m.proof_joined || m.joiner_proof}" class="ss-thumb" onclick="zoomImg('${m.proof_joined || m.joiner_proof}')" onerror="this.style.display='none'">
+                            </td>
+                            <td>C: ${m.result_creator || m.creator_claim || '?'}<br>J: ${m.result_joined || m.joiner_claim || '?'}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.createdBy || m.creatorId}', ${winPrize})">Win C</button>
+                                    <button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.joinedBy || m.joinerId}', ${winPrize})">Win J</button>
+                                    <button class="action-btn reject" onclick="cancelMatch('${c.id}', ${entryFee})">Cancel</button>
+                                </div>
+                            </td>
+                        </tr>`;
                     }
                 });
                 document.getElementById('stat-matchCount').innerText = mCount;
@@ -198,7 +219,7 @@
                 }
             });
 
-            // LUCKY DRAW HISTORY (Sorted by time)
+            // LUCKY DRAW HISTORY
             const luckyQuery = query(collection(db, 'luckyDrawHistory'), orderBy('time', 'desc'));
             onSnapshot(luckyQuery, (s) => {
                 const list = document.getElementById('luckyDrawListBody');
@@ -238,15 +259,30 @@
             Swal.fire("Rejected", "रकम फिर्ता गरियो", "error");
         };
 
+        // अपडेट गरिएको finalizeMatch फङ्सन
         window.finalizeMatch = async (mid, wid, prize) => {
+            if(!wid) return Swal.fire("Error", "खेलाडीको ID भेटिएन!", "error");
+            
             const userRef = doc(db, 'users', wid);
-            await runTransaction(db, async (transaction) => {
-                const userSnap = await transaction.get(userRef);
-                const newBalance = (userSnap.data().balance || 0) + parseFloat(prize);
-                transaction.update(userRef, { balance: newBalance });
-                transaction.update(doc(db, 'matches', mid), { status: 'completed', winnerId: wid });
-            });
-            Swal.fire("Success", "बिजेता घोषित भयो", "success");
+            const matchRef = doc(db, 'matches', mid);
+
+            try {
+                await runTransaction(db, async (transaction) => {
+                    const userSnap = await transaction.get(userRef);
+                    if (!userSnap.exists()) throw "User does not exist!";
+                    
+                    const newBalance = (userSnap.data().balance || 0) + parseFloat(prize);
+                    transaction.update(userRef, { balance: newBalance });
+                    transaction.update(matchRef, { 
+                        status: 'result', 
+                        finalWinner: wid, 
+                        closedAt: new Date().toISOString() 
+                    });
+                });
+                Swal.fire("Success", "बिजेता घोषित भयो र रकम पठाइयो।", "success");
+            } catch (e) {
+                Swal.fire("Error", "Process failed: " + e, "error");
+            }
         };
 
         window.cancelMatch = async (mid, entry) => {
@@ -255,18 +291,18 @@
             const m = mSnap.data();
             
             await runTransaction(db, async (transaction) => {
-                const cRef = doc(db, 'users', m.creatorId);
+                const cRef = doc(db, 'users', m.createdBy || m.creatorId);
                 const cSnap = await transaction.get(cRef);
                 transaction.update(cRef, { balance: (cSnap.data().balance || 0) + parseFloat(entry) });
 
-                if(m.joinerId) {
-                    const jRef = doc(db, 'users', m.joinerId);
+                if(m.joinedBy || m.joinerId) {
+                    const jRef = doc(db, 'users', m.joinedBy || m.joinerId);
                     const jSnap = await transaction.get(jRef);
                     transaction.update(jRef, { balance: (jSnap.data().balance || 0) + parseFloat(entry) });
                 }
                 transaction.delete(mRef);
             });
-            Swal.fire("Cancelled", "म्याच रद्द भयो", "info");
+            Swal.fire("Cancelled", "म्याच रद्द भयो र ब्यालेन्स फिर्ता गरियो", "info");
         };
 
         window.updateLuckyCode = () => {
@@ -281,7 +317,6 @@
         window.updateStatus = (coll, id, s) => updateDoc(doc(db, coll, id), { status: s });
         window.rejectRequest = (coll, id) => confirm("Are you sure?") && deleteDoc(doc(db, coll, id));
 
-        // UI Functions remain the same
         window.showSection = (id) => {
             document.querySelectorAll('.main-content > div').forEach(d => d.classList.add('hidden'));
             document.getElementById('section-' + id).classList.remove('hidden');
@@ -292,7 +327,7 @@
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('overlay').classList.toggle('active');
         };
-        window.zoomImg = (url) => url && Swal.fire({ imageUrl: url, imageAlt: 'Proof' });
+        window.zoomImg = (url) => url && Swal.fire({ imageUrl: url, imageAlt: 'Proof', width: '90%' });
         window.filterUsers = () => {
             let input = document.getElementById("userSearchInput").value.toUpperCase();
             let tr = document.getElementById("userListBody").getElementsByTagName("tr");

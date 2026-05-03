@@ -15,23 +15,21 @@
         .nav-link { display: block; color: #bdc3c7; padding: 12px; text-decoration: none; margin-bottom: 5px; border-radius: 5px; cursor: pointer; }
         .nav-link:hover, .nav-link.active { background: #34495e; color: white; }
         .main-content { flex: 1; overflow-y: auto; padding: 25px; transition: 0.3s; position: relative; padding-top: 70px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; overflow-x: auto; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
         .ss-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 1px solid #ddd; margin-right: 5px; }
         @media (max-width: 768px) { .sidebar { position: fixed; left: -250px; height: 100%; } .sidebar.open { left: 0; } .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1999; } .overlay.active { display: block; } }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .stat-card { background: white; padding: 15px; border-radius: 10px; border-top: 4px solid var(--accent); text-align: center; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
         .btn-group { display: flex; gap: 5px; }
-        .action-btn { padding: 8px 12px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .action-btn { padding: 8px 12px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
         .approve { background: var(--success); }
         .reject { background: var(--danger); }
         .edit-btn { background: #2980b9; }
         .hidden { display: none; }
-        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; box-sizing: border-box; }
+        input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; margin-bottom: 15px; box-sizing: border-box; }
         .search-container { margin-bottom: 15px; position: relative; }
-        .search-container input { padding-left: 35px; border: 2px solid var(--primary); }
-        .search-container i { position: absolute; left: 12px; top: 22px; color: var(--primary); }
     </style>
 </head>
 <body>
@@ -62,65 +60,58 @@
             </div>
         </div>
 
-        <div id="section-matchbox" class="hidden">
-            <h1>Match Box</h1>
-            <div class="card"><table><thead><tr><th>ID</th><th>Creator</th><th>Joiner</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="matchBoxList"></tbody></table></div>
-        </div>
-
-        <div id="section-matches" class="hidden">
-            <h1>Match Disputes (Result Pending)</h1>
-            <div class="card"><table><thead><tr><th>ID</th><th>Players</th><th>Screenshot</th><th>Claims</th><th>Action</th></tr></thead><tbody id="matchListBody"></tbody></table></div>
-        </div>
-
-        <div id="section-deposits" class="hidden">
-            <h1>Deposits</h1>
-            <div class="card"><table><thead><tr><th>User</th><th>Amount</th><th>Proof</th><th>Action</th></tr></thead><tbody id="depositListBody"></tbody></table></div>
-        </div>
-
-        <div id="section-withdraws" class="hidden">
-            <h1>Withdraws</h1>
-            <div class="card"><table><thead><tr><th>User UID</th><th>Method</th><th>Wallet No.</th><th>Amount</th><th>Action</th></tr></thead><tbody id="withdrawListBody"></tbody></table></div>
-        </div>
-
         <div id="section-luckydraw" class="hidden">
             <h1>Lucky Draw Management</h1>
             <div class="card" style="background:#fffbe6; border: 1px solid #f1c40f;">
                 <h3>Set System Lucky Code</h3>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="luckyCodeInput" placeholder="५ अंकको कोड" maxlength="5">
-                    <button class="action-btn approve" onclick="updateLuckyCode()">Update Code</button>
+                <div style="display:flex; gap:10px; align-items: flex-end;">
+                    <div style="flex:1;">
+                        <label>नयाँ ५ अंकको कोड:</label>
+                        <input type="text" id="luckyCodeInput" placeholder="उदा: 12345" maxlength="5">
+                    </div>
+                    <button class="action-btn approve" style="height: 45px; margin-bottom: 15px;" id="btnUpdateLucky">Update Code</button>
                 </div>
-                <p>हालको सिस्टम कोड: <span id="currentSystemCode" style="color:var(--danger); font-weight:bold;">---</span></p>
+                <p>हालको सिस्टम कोड: <span id="currentSystemCode" style="color:var(--danger); font-weight:bold; font-size: 1.2rem;">---</span></p>
             </div>
-            <div class="card"><h3>Draw History</h3><table><thead><tr><th>Time</th><th>Name (UID)</th><th>Box</th><th>User No.</th><th>Result</th></tr></thead><tbody id="luckyDrawListBody"></tbody></table></div>
-        </div>
-
-        <div id="section-users" class="hidden">
-            <h1>Manage Users</h1>
-            <div class="search-container"><i class="fas fa-search"></i><input type="text" id="userSearchInput" placeholder="UID वा नामबाट खोज्नुहोस्..." onkeyup="filterUsers()"></div>
-            <div class="card"><table><thead><tr><th>UID</th><th>Name</th><th>Balance</th><th>Action</th></tr></thead><tbody id="userListBody"></tbody></table></div>
+            <div class="card">
+                <h3>User Ticket History</h3>
+                <table><thead><tr><th>User</th><th>Ticket Code</th><th>Time</th></tr></thead><tbody id="luckyDrawListBody"></tbody></table>
+            </div>
         </div>
 
         <div id="section-settings" class="hidden">
-            <h1>Global Settings</h1>
+            <h1>Global Settings (Notice)</h1>
             <div class="card">
-                <label>App Download Link:</label><input type="text" id="appLinkInput">
-                <label>Home Notice:</label><textarea id="noticeText" rows="4"></textarea>
-                <button class="action-btn approve" style="margin-top:15px;" onclick="saveSettings()">Save Settings</button>
+                <label>App Download Link:</label>
+                <input type="text" id="appLinkInput" placeholder="https://...">
+                
+                <label>Home Screen Notice:</label>
+                <textarea id="noticeText" rows="4" placeholder="यहाँ सूचना लेख्नुहोस्..."></textarea>
+                
+                <label>Notice Date:</label>
+                <input type="text" id="noticeDateInput" placeholder="उदा: 2026-05-04">
+                
+                <button class="action-btn approve" style="width:100%; padding:15px;" id="btnSaveSettings">Update All Settings</button>
             </div>
         </div>
+
+        <div id="section-matchbox" class="hidden"><h1>Match Box</h1><div class="card"><table><thead><tr><th>ID</th><th>Creator</th><th>Joiner</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="matchBoxList"></tbody></table></div></div>
+        <div id="section-matches" class="hidden"><h1>Match Reports</h1><div class="card"><table><thead><tr><th>ID</th><th>Players</th><th>Screenshot</th><th>Claims</th><th>Action</th></tr></thead><tbody id="matchListBody"></tbody></table></div></div>
+        <div id="section-deposits" class="hidden"><h1>Deposits</h1><div class="card"><table><thead><tr><th>User</th><th>Amount</th><th>Proof</th><th>Action</th></tr></thead><tbody id="depositListBody"></tbody></table></div></div>
+        <div id="section-withdraws" class="hidden"><h1>Withdraws</h1><div class="card"><table><thead><tr><th>User</th><th>Method</th><th>Wallet</th><th>Amount</th><th>Action</th></tr></thead><tbody id="withdrawListBody"></tbody></table></div></div>
+        <div id="section-users" class="hidden"><h1>Manage Users</h1><div class="card"><input type="text" id="userSearchInput" placeholder="Search users..." onkeyup="filterUsers()"><table><thead><tr><th>UID</th><th>Name</th><th>Balance</th><th>Action</th></tr></thead><tbody id="userListBody"></tbody></table></div></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, doc, onSnapshot, updateDoc, deleteDoc, setDoc, getDoc, runTransaction, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, onSnapshot, updateDoc, deleteDoc, setDoc, getDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
             authDomain: "harishbist-3a263.firebaseapp.com",
             projectId: "harishbist-3a263",
-            storageBucket: "harishbist-3a263.firebasestorage.app", // Fixed: Correct Bucket URL
+            storageBucket: "harishbist-3a263.firebasestorage.app",
             messagingSenderId: "816353842957",
             appId: "1:816353842957:web:5b853c5bed6450fc544244"
         };
@@ -129,12 +120,13 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Global functions to make them accessible from HTML
+        // UI Helpers
         window.showSection = (id) => {
             document.querySelectorAll('.main-content > div').forEach(d => d.classList.add('hidden'));
             document.getElementById('section-' + id).classList.remove('hidden');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            if(window.innerWidth <= 768) toggleSidebar();
+            const activeNav = Array.from(document.querySelectorAll('.nav-link')).find(l => l.innerText.toLowerCase().includes(id));
+            if(activeNav) activeNav.classList.add('active');
         };
 
         window.toggleSidebar = () => {
@@ -143,118 +135,110 @@
         };
 
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                console.log("Logged in as:", user.uid);
-                loadAllData();
-            } else {
-                signInAnonymously(auth);
-            }
+            if (user) loadData();
+            else signInAnonymously(auth);
         });
 
-        function loadAllData() {
-            // १. युजर डाटा लोड गर्ने
+        function loadData() {
+            // --- १. Notice & Settings Load ---
+            onSnapshot(doc(db, "settings", "admin_notice"), (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    document.getElementById('noticeText').value = data.text || "";
+                    document.getElementById('noticeDateInput').value = data.date || "";
+                }
+            });
+
+            onSnapshot(doc(db, "settings", "app_config"), (snap) => {
+                if (snap.exists()) {
+                    document.getElementById('appLinkInput').value = snap.data().downloadLink || "";
+                }
+            });
+
+            // --- २. Lucky Draw Load ---
+            onSnapshot(doc(db, "settings", "lucky_draw"), (snap) => {
+                if (snap.exists()) {
+                    document.getElementById('currentSystemCode').innerText = snap.data().code || "---";
+                }
+            });
+
+            // User tickets
+            onSnapshot(collection(db, "lucky_tickets"), (snap) => {
+                const list = document.getElementById('luckyDrawListBody');
+                list.innerHTML = "";
+                snap.forEach(doc => {
+                    const t = doc.data();
+                    list.innerHTML += `<tr><td>${t.userName || t.uid}</td><td>${t.ticketCode}</td><td>${t.timestamp || 'N/A'}</td></tr>`;
+                });
+            });
+
+            // --- ३. Dashboard Stats & Users ---
             onSnapshot(collection(db, 'users'), (snap) => {
                 const list = document.getElementById('userListBody');
                 list.innerHTML = ""; let uCount = 0;
                 snap.forEach(c => {
                     uCount++; const u = c.data();
-                    list.innerHTML += `<tr><td>${c.id}</td><td>${u.name || 'No Name'}</td><td>रू ${u.balance || 0}</td><td><div class="btn-group"><button class="action-btn edit-btn" onclick="editBalance('${c.id}',${u.balance || 0})">Edit</button><button class="action-btn reject" onclick="rejectRequest('users', '${c.id}')">Ban</button></div></td></tr>`;
+                    list.innerHTML += `<tr><td>${c.id}</td><td>${u.name || 'User'}</td><td>रू ${u.balance || 0}</td><td><button class="action-btn edit-btn" onclick="editBalance('${c.id}',${u.balance})">Edit</button></td></tr>`;
                 });
                 document.getElementById('stat-totalUsers').innerText = uCount;
             });
-
-            // २. डिपोजिट पेन्डिङ मात्र देखाउने
+            
+            // Pending Deposits
             onSnapshot(query(collection(db, 'deposits'), where('status', '==', 'pending')), (snap) => {
+                document.getElementById('stat-pendingDeposit').innerText = snap.size;
                 const list = document.getElementById('depositListBody');
-                list.innerHTML = ""; let count = 0;
+                list.innerHTML = "";
                 snap.forEach(c => {
-                    count++; const d = c.data();
-                    list.innerHTML += `<tr><td>${d.name || d.uid}</td><td>रू ${d.amount}</td><td><img src="${d.screenshot || d.proofUrl}" class="ss-thumb" onclick="zoomImg('${d.screenshot || d.proofUrl}')"></td><td><div class="btn-group"><button class="action-btn approve" onclick="approveDeposit('${c.id}','${d.uid}',${d.amount})">Approve</button><button class="action-btn reject" onclick="rejectRequest('deposits', '${c.id}')">Reject</button></div></td></tr>`;
+                    const d = c.data();
+                    list.innerHTML += `<tr><td>${d.name}</td><td>रू ${d.amount}</td><td><img src="${d.screenshot}" class="ss-thumb" onclick="window.zoomImg('${d.screenshot}')"></td><td><button class="action-btn approve" onclick="approveDeposit('${c.id}','${d.uid}',${d.amount})">Approve</button></td></tr>`;
                 });
-                document.getElementById('stat-pendingDeposit').innerText = count;
-            });
-
-            // ३. विथड्र पेन्डिङ मात्र देखाउने
-            onSnapshot(query(collection(db, 'withdraws'), where('status', '==', 'pending')), (snap) => {
-                const list = document.getElementById('withdrawListBody');
-                list.innerHTML = ""; let count = 0;
-                snap.forEach(c => {
-                    count++; const w = c.data();
-                    list.innerHTML += `<tr><td>${w.uid}</td><td>${w.method}</td><td>${w.wallet}</td><td>रू ${w.amount}</td><td><div class="btn-group"><button class="action-btn approve" onclick="updateStatus('withdraws', '${c.id}', 'completed')">Done</button><button class="action-btn reject" onclick="rejectWithdraw('${c.id}','${w.uid}',${w.amount})">Reject</button></div></td></tr>`;
-                });
-                document.getElementById('stat-pendingWithdraw').innerText = count;
-            });
-
-            // ४. म्याच र विवाद (Dispute) हेर्ने
-            onSnapshot(collection(db, 'matches'), (snap) => {
-                const dList = document.getElementById('matchListBody');
-                const bList = document.getElementById('matchBoxList');
-                dList.innerHTML = ""; bList.innerHTML = ""; let mCount = 0;
-                snap.forEach(c => {
-                    mCount++; const m = c.data();
-                    const fee = m.entryFee || 0;
-                    const winAmt = fee * 2 * 0.90; // १०% एडमिन चार्ज काटेर
-
-                    bList.innerHTML += `<tr><td>${c.id}</td><td>${m.creatorName || 'C'}</td><td>${m.joinerName || 'Waiting'}</td><td>रू ${fee}</td><td>${m.status}</td><td><button class="action-btn reject" onclick="rejectRequest('matches', '${c.id}')">Delete</button></td></tr>`;
-                    
-                    if(m.status === 'dispute' || m.status === 'disputed' || m.status === 'pending'){
-                        dList.innerHTML += `<tr><td>${c.id}</td><td>C: ${m.creatorName}<br>J: ${m.joinerName}</td><td><img src="${m.proof_creator}" class="ss-thumb" onclick="zoomImg('${m.proof_creator}')"><img src="${m.proof_joiner}" class="ss-thumb" onclick="zoomImg('${m.proof_joiner}')"></td><td>C: ${m.creator_claim}<br>J: ${m.joiner_claim}</td><td><div class="btn-group"><button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.creatorId}', ${winAmt})">C Win</button><button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.joinerId}', ${winAmt})">J Win</button><button class="action-btn reject" onclick="cancelMatch('${c.id}', ${fee})">Refund</button></div></td></tr>`;
-                    }
-                });
-                document.getElementById('stat-matchCount').innerText = mCount;
             });
         }
 
-        // --- Business Logic Functions ---
-        window.editBalance = (uid, old) => {
-            const val = prompt("नयाँ ब्यालेन्स हाल्नुहोस्:", old);
-            if(val) updateDoc(doc(db, 'users', uid), { balance: parseFloat(val) });
-        };
+        // --- ४. Update Functions ---
 
-        window.approveDeposit = async (id, uid, amt) => {
+        // Notice Update
+        document.getElementById('btnSaveSettings').onclick = async () => {
+            const btn = document.getElementById('btnSaveSettings');
+            btn.disabled = true;
             try {
-                const userRef = doc(db, 'users', uid);
-                await runTransaction(db, async (t) => {
-                    const snap = await t.get(userRef);
-                    t.update(userRef, { balance: (snap.data().balance || 0) + parseFloat(amt) });
-                    t.update(doc(db, 'deposits', id), { status: 'approved' });
-                });
-                Swal.fire("Success", "ब्यालेन्स थपियो", "success");
-            } catch(e) { Swal.fire("Error", e.message, "error"); }
-        };
+                // Update Notice
+                await setDoc(doc(db, "settings", "admin_notice"), {
+                    text: document.getElementById('noticeText').value,
+                    date: document.getElementById('noticeDateInput').value
+                }, { merge: true });
 
-        window.finalizeMatch = async (mid, wid, prize) => {
-            try {
-                const userRef = doc(db, 'users', wid);
-                await runTransaction(db, async (t) => {
-                    const snap = await t.get(userRef);
-                    t.update(userRef, { balance: (snap.data().balance || 0) + parseFloat(prize) });
-                    t.update(doc(db, 'matches', mid), { status: 'completed', winner: wid });
-                });
-                Swal.fire("Success", "बिजेतालाई पैसा पठाइयो", "success");
-            } catch(e) { Swal.fire("Error", e.message, "error"); }
-        };
+                // Update App Link
+                await setDoc(doc(db, "settings", "app_config"), {
+                    downloadLink: document.getElementById('appLinkInput').value
+                }, { merge: true });
 
-        window.rejectWithdraw = async (id, uid, amt) => {
-            const userRef = doc(db, 'users', uid);
-            await runTransaction(db, async (t) => {
-                const snap = await t.get(userRef);
-                t.update(userRef, { balance: (snap.data().balance || 0) + parseFloat(amt) });
-                t.delete(doc(db, 'withdraws', id));
-            });
-            Swal.fire("Refunded", "रकम फिर्ता भयो", "info");
-        };
-
-        window.updateStatus = (coll, id, s) => updateDoc(doc(db, coll, id), { status: s });
-        window.rejectRequest = (coll, id) => confirm("Are you sure?") && deleteDoc(doc(db, coll, id));
-        window.zoomImg = (url) => url && Swal.fire({ imageUrl: url, imageAlt: 'Proof', width: '90%' });
-        
-        window.filterUsers = () => {
-            let input = document.getElementById("userSearchInput").value.toUpperCase();
-            let tr = document.getElementById("userListBody").getElementsByTagName("tr");
-            for (let i = 0; i < tr.length; i++) {
-                tr[i].style.display = tr[i].innerText.toUpperCase().includes(input) ? "" : "none";
+                Swal.fire("सफलता", "सूचना र सेटिङ अपडेट भयो!", "success");
+            } catch (e) {
+                Swal.fire("Error", e.message, "error");
             }
+            btn.disabled = false;
+        };
+
+        // Lucky Draw Code Update
+        document.getElementById('btnUpdateLucky').onclick = async () => {
+            const code = document.getElementById('luckyCodeInput').value;
+            if (code.length !== 5) return Swal.fire("सावधानी", "कृपया ५ अंकको कोड हाल्नुहोस्", "warning");
+
+            try {
+                await setDoc(doc(db, "settings", "lucky_draw"), { code: code }, { merge: true });
+                Swal.fire("Success", "लक्की कोड अपडेट भयो!", "success");
+                document.getElementById('luckyCodeInput').value = "";
+            } catch (e) {
+                Swal.fire("Error", e.message, "error");
+            }
+        };
+
+        // Other Logic
+        window.zoomImg = (url) => Swal.fire({ imageUrl: url, width: '90%' });
+        window.editBalance = (uid, old) => {
+            const val = prompt("नयाँ ब्यालेन्स:", old);
+            if(val) updateDoc(doc(db, 'users', uid), { balance: parseFloat(val) });
         };
     </script>
 </body>

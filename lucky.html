@@ -112,7 +112,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, onSnapshot, updateDoc, collection, addDoc, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, onSnapshot, getDoc, updateDoc, collection, addDoc, query, where, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
@@ -129,24 +129,32 @@
 
         let currentUser = null;
         let userBalance = 0;
+        let adminLuckyCode = "NONE"; // एडमिनले सेट गरेको कोड
 
-        // १. अथेन्टिकेसन र ब्यालेन्स लोडिङ
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
+                // युजर डाटा र ब्यालेन्स
                 onSnapshot(doc(db, "users", user.uid), (snap) => {
                     if(snap.exists()) {
                         userBalance = snap.data().balance || 0;
                         document.getElementById('userBalanceDisplay').innerText = "रू " + userBalance.toFixed(2);
                     }
                 });
+
+                // एडमिनले सेट गरेको लक्की कोड सुन्ने (Real-time)
+                onSnapshot(doc(db, "settings", "lucky_draw"), (snap) => {
+                    if(snap.exists()) {
+                        adminLuckyCode = snap.data().code;
+                    }
+                });
+
                 loadHistory();
             } else {
                 window.location.href = "login.html";
             }
         });
 
-        // २. ड्र हिस्ट्री लोड गर्ने
         function loadHistory() {
             const q = query(
                 collection(db, "lucky_draws"), 
@@ -173,7 +181,6 @@
             });
         }
 
-        // ३. ड्र जोइन गर्ने लोजिक
         window.handleJoinRequest = async (fee, winPrize, boxName) => {
             if (userBalance < fee) {
                 return Swal.fire('Error', 'तपाईँको ब्यालेन्स पुगेन!', 'error');
@@ -182,24 +189,32 @@
             const { value: userNumber } = await Swal.fire({
                 title: boxName + ' Box Entry',
                 input: 'number',
-                inputLabel: 'कुनै ५ अंकको नम्बर हाल्नुहोस् (०-९९९९९)',
-                inputPlaceholder: '12345',
+                inputLabel: 'कुनै ५ अंकको नम्बर हाल्नुहोस्',
+                inputPlaceholder: 'उदा: 12345',
                 showCancelButton: true,
                 confirmButtonText: 'Submit & Pay',
                 confirmButtonColor: '#e67e22',
             });
 
             if (userNumber) {
+                // १. नम्बरको लम्बाइ चेक गर्ने (ऐच्छिक तर राम्रो)
+                if(userNumber.length !== 5) {
+                    return Swal.fire('सावधानी', 'कृपया ५ अंककै नम्बर हाल्नुहोस्।', 'warning');
+                }
+
                 Swal.fire({ title: 'जाँच गर्दै...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-                // १/१० सम्भावना (Win Probability)
-                const isWin = Math.random() > 0.9;
+                // २. लोजिक: एडमिन कोड र युजर कोड तुलना गर्ने
+                // दुवैलाई String मा कन्भर्ट गरेर चेक गर्दा राम्रो हुन्छ
+                const isWin = String(userNumber) === String(adminLuckyCode);
                 const result = isWin ? "WIN" : "LOSS";
                 const newBalance = isWin ? (userBalance - fee + winPrize) : (userBalance - fee);
 
                 try {
-                    // Firestore मा डाटा अपडेट गर्ने
+                    // ३. डाटाबेस अपडेट
                     await updateDoc(doc(db, "users", currentUser.uid), { balance: newBalance });
+                    
+                    // ४. हिस्ट्रीमा सेभ गर्ने
                     await addDoc(collection(db, "lucky_draws"), {
                         uid: currentUser.uid,
                         boxName: boxName,
@@ -208,14 +223,22 @@
                         timestamp: serverTimestamp()
                     });
 
+                    // ५. लक्की टिकेट रेकर्ड (एडमिनले हेर्नको लागि)
+                    await addDoc(collection(db, "lucky_tickets"), {
+                        uid: currentUser.uid,
+                        userName: auth.currentUser.displayName || "User",
+                        ticketCode: userNumber,
+                        timestamp: new Date().toLocaleString()
+                    });
+
                     Swal.close();
                     if (isWin) {
-                        Swal.fire('बधाई छ!', `तपाईँले रू ${winPrize} जित्नुभयो!`, 'success');
+                        Swal.fire('बधाई छ!', `नम्बर मिल्यो! तपाईँले रू ${winPrize} जित्नुभयो!`, 'success');
                     } else {
-                        Swal.fire('मिलेन!', `यो पटक हारियो, अर्को पटक प्रयास गर्नुहोला।`, 'error');
+                        Swal.fire('मिलेन!', `हालेको नम्बर मिलेन। अर्को पटक प्रयास गर्नुहोला।`, 'error');
                     }
                 } catch (e) {
-                    Swal.fire('Error', 'सिस्टममा केही समस्या आयो!', 'error');
+                    Swal.fire('Error', 'सिस्टममा केही समस्या आयो: ' + e.message, 'error');
                 }
             }
         };

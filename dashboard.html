@@ -19,7 +19,7 @@
             --drawer-grad: linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%);
         }
 
-        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-dark); color: var(--text-main); padding-bottom: 90px; overflow-x: hidden; }
+        body { font-family: 'Inter', sans-serif; margin: 0; background: var(--bg-dark); color: var(--text-main); padding-bottom: 100px; overflow-x: hidden; }
 
         /* Toast Notification */
         #toast { 
@@ -89,11 +89,32 @@
         .wheel-img { width: 100%; height: 100%; position: absolute; background: conic-gradient(#ef4444 0deg 60deg, #fbbf24 60deg 120deg, #22c55e 120deg 180deg, #3b82f6 180deg 240deg, #8b5cf6 240deg 300deg, #f97316 300deg 360deg); z-index: 1; }
         .number-slot { position: absolute; width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; padding-top: 8px; color: white; font-weight: 900; font-size: 0.9rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); z-index: 2; box-sizing: border-box; }
 
-        /* Bottom Nav */
-        .bottom-nav { position: fixed; bottom: 12px; left: 12px; right: 12px; background: rgba(30, 41, 59, 0.95); display: flex; justify-content: space-around; padding: 10px 0; border-radius: 18px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); z-index: 1000; }
-        .nav-item { text-align: center; color: var(--text-dim); font-size: 0.65rem; text-decoration: none; font-weight: 600; }
-        .nav-item.active { color: var(--gold); }
-        .nav-item i { font-size: 1.2rem; margin-bottom: 4px; display: block; }
+        /* Bottom Nav - Improved Sizes */
+        .bottom-nav { 
+            position: fixed; bottom: 15px; left: 15px; right: 15px; 
+            background: rgba(30, 41, 59, 0.98); 
+            display: flex; justify-content: space-around; 
+            padding: 12px 0; border-radius: 20px; 
+            border: 1px solid rgba(255,255,255,0.1); 
+            backdrop-filter: blur(15px); z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .nav-item { 
+            text-align: center; color: var(--text-dim); 
+            text-decoration: none; font-weight: 700; 
+            flex: 1; transition: 0.3s;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .nav-item i { 
+            font-size: 1.4rem; /* Icon size increased */
+            margin-bottom: 5px; 
+        }
+        .nav-item span {
+            font-size: 0.75rem; /* Text size increased */
+            letter-spacing: 0.5px;
+        }
+        .nav-item.active { color: var(--gold); transform: translateY(-3px); }
+        .nav-item:active { transform: scale(0.9); opacity: 0.7; }
     </style>
 </head>
 <body>
@@ -103,8 +124,11 @@
     
     <div class="side-drawer" id="sideDrawer">
         <h2 style="color: var(--gold); font-size: 0.9rem; text-align:center; margin-bottom: 20px;"><i class="fas fa-bars"></i> MENU</h2>
-        <a href="https://wa.me/9779800000000" class="support-link"><i class="fab fa-whatsapp" style="color:#25D366;"></i> WA</a>
-        <a href="https://t.me/yourid" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> TG</a>
+        <a href="https://wa.me/9779767301333" class="support-link"><i class="fab fa-whatsapp" style="color:#25D366;"></i> Admin</a>
+         <a href="https://t.me/https://t.me/https://t.me/https://t.me/watchads11" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Channel</a>
+        <a href="https://t.me/https://t.me/ludogroup_11" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Ludo G</a>
+        <a href="https://t.me/https://t.me/https://t.me/pubg9748" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Pubg G</a>
+        <a href="https://t.me/https://t.me/https://t.me/freefire9748" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Free Fire G</a>
         <a href="profile.html" class="support-link"><i class="fas fa-user-circle" style="color:var(--gold);"></i> Pro</a>
         
         <button onclick="closeDrawer()" class="play-btn" style="background:#fbbf24; color: #450a0a; width: 100%; margin-top: auto; padding: 8px; font-size: 0.65rem;">बन्द</button>
@@ -157,10 +181,10 @@
     </div>
 
     <nav class="bottom-nav">
-        <a href="dashboard.html" class="nav-item active"><i class="fas fa-home"></i>Home</a>
-        <a href="matches.html" class="nav-item"><i class="fas fa-gamepad"></i>Matches</a>
-        <a href="notice.html" class="nav-item"><i class="fas fa-bullhorn"></i>Notice</a>
-        <a href="profile.html" class="nav-item"><i class="fas fa-user"></i>Profile</a>
+        <a href="dashboard.html" class="nav-item active"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="matches.html" class="nav-item"><i class="fas fa-gamepad"></i><span>Matches</span></a>
+        <a href="notice.html" class="nav-item"><i class="fas fa-bullhorn"></i><span>Notice</span></a>
+        <a href="profile.html" class="nav-item"><i class="fas fa-user"></i><span>Profile</span></a>
     </nav>
 
     <script type="module">

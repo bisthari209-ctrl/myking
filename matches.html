@@ -47,6 +47,10 @@
         .room-btn { background: #f59e0b; }
 
         .room-box { background: rgba(251, 191, 36, 0.1); border: 1px dashed var(--gold); padding: 10px; border-radius: 10px; margin-top: 10px; text-align: center; color: var(--gold); font-weight: bold; }
+        .status-badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 5px; font-weight: bold; text-transform: uppercase; }
+        .badge-win { background: #22c55e; color: white; }
+        .badge-loss { background: #ef4444; color: white; }
+        .badge-pending { background: #64748b; color: white; }
 
         #chatModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; }
         .chat-container { width:90%; max-width:400px; height:80vh; background:var(--card-bg); margin:10vh auto; border-radius:20px; display:flex; flex-direction:column; overflow:hidden; }
@@ -155,9 +159,9 @@
             } else if (currentTab === 'mine') {
                 q = query(matchesRef, where("createdBy", "==", currentUser.uid), where("status", "==", "waiting"));
             } else if (currentTab === 'waiting') {
-                q = query(matchesRef, where("allParticipants", "array-contains", currentUser.uid), where("status", "in", ["joined", "pending_review", "disputed"]));
+                q = query(matchesRef, where("allParticipants", "array-contains", currentUser.uid), where("status", "in", ["joined", "pending_review"]));
             } else {
-                q = query(matchesRef, where("allParticipants", "array-contains", currentUser.uid), where("status", "==", "result"));
+                q = query(matchesRef, where("allParticipants", "array-contains", currentUser.uid), where("status", "in", ["result", "disputed", "pending_review"]));
             }
 
             onSnapshot(q, (snapshot) => {
@@ -166,11 +170,16 @@
                 snapshot.forEach((matchDoc) => {
                     const match = matchDoc.data();
                     const matchId = matchDoc.id;
+                    const userSubmitted = match[`result_${currentUser.uid}`];
+
+                    // Logic: Waiting ट्याबमा छ तर नतिजा बुझाइसक्यो भने यहाँ नदेखाउने (Result मा पठाउने)
+                    if (currentTab === 'waiting' && userSubmitted) return;
+                    
+                    // Logic: Result ट्याबमा छ तर नतिजा बुझाएको छैन भने यहाँ नदेखाउने
+                    if (currentTab === 'result' && !userSubmitted && match.status !== 'result') return;
 
                     if (currentTab === 'open' && match.createdBy === currentUser.uid) return;
-                    
-                    const userSubmitted = match[`result_${currentUser.uid}`];
-                    
+
                     count++;
                     const winPrize = (match.entryFee * 2) * 0.85;
                     const card = document.createElement('div');
@@ -178,26 +187,30 @@
                     
                     let actionButtons = "";
                     let roomDisplay = match.roomCode ? `<div class="room-box">ROOM CODE: ${match.roomCode}</div>` : "";
+                    let statusInfo = "";
 
                     if (currentTab === 'open') {
                         actionButtons = `<button class="action-btn join-btn" onclick="joinMatch('${matchId}', ${match.entryFee})">JOIN NOW</button>`;
                     } else if (currentTab === 'mine') {
                         actionButtons = `<button class="action-btn" style="background:#475569;" disabled>WAITING FOR OPPONENT</button>`;
-                    } else if (match.status === 'disputed') {
-                        actionButtons = `<button class="action-btn" style="background:#ef4444;" disabled>DISPUTED: ADMIN REVIEWING</button>`;
-                    } else if (match.status === 'joined' || (match.status === 'pending_review' && !userSubmitted)) {
+                    } else if (currentTab === 'waiting') {
                         actionButtons += `<button class="action-btn chat-btn" onclick="openChat('${matchId}')"><i class="fas fa-comments"></i></button>`;
-                        
                         if (match.createdBy === currentUser.uid && !match.roomCode) {
                             actionButtons += `<button class="action-btn room-btn" onclick="setRoomCode('${matchId}')">SET ROOM</button>`;
                         }
-
                         actionButtons += `
                             <button class="action-btn win-btn" onclick="handleResult('${matchId}', 'win')">WIN</button>
                             <button class="action-btn loss-btn" onclick="handleResult('${matchId}', 'loss')">LOSS</button>
                         `;
-                    } else if (match.status === 'pending_review' && userSubmitted) {
-                        actionButtons = `<button class="action-btn" style="background:#64748b;" disabled>WAITING OPPONENT RESULT</button>`;
+                    } else if (currentTab === 'result') {
+                        if (match.status === 'disputed') {
+                            statusInfo = `<span class="status-badge badge-pending" style="background:#ef4444;">DISPUTED</span>`;
+                        } else if (match.status === 'result') {
+                            const isWinner = match.finalWinner === currentUser.uid;
+                            statusInfo = isWinner ? `<span class="status-badge badge-win">YOU WON</span>` : `<span class="status-badge badge-loss">YOU LOST</span>`;
+                        } else {
+                            statusInfo = `<span class="status-badge badge-pending">PENDING REVIEW</span>`;
+                        }
                     }
 
                     card.innerHTML = `
@@ -207,6 +220,7 @@
                         </div>
                         <div class="match-body">
                             <b>PRIZE:</b> रू ${winPrize.toFixed(0)} | <b>VS:</b> ${match.createdBy === currentUser.uid ? (match.joinedName || '...') : 'Opponent'}
+                            <div style="margin-top:10px;">${statusInfo}</div>
                         </div>
                         ${roomDisplay}
                         <div class="btn-group">${actionButtons}</div>
@@ -229,7 +243,6 @@
 
             if (res1 && res2) {
                 if (res1 !== res2) {
-                    // Normal Case: One wins, one loses
                     const winnerId = (res1 === 'win') ? p1 : p2;
                     const winAmt = (match.entryFee * 2) * 0.85;
                     
@@ -244,12 +257,10 @@
                     });
                     showToast("नतिजा घोषणा भयो!");
                 } else {
-                    // Dispute Case: Both claim same result (WIN-WIN or LOSS-LOSS)
                     await updateDoc(matchRef, { 
                         status: "disputed",
                         disputeReason: "Conflict: Both claimed " + res1
                     });
-                    Swal.fire("Dispute!", "दुवैले WIN दाबी गरे, अब Admin ले चेक गर्नेछ।", "warning");
                 }
             }
         }
@@ -303,7 +314,6 @@
 
             if (file) {
                 showToast("सर्भरमा अपलोड हुँदैछ...");
-                
                 const formData = new FormData();
                 formData.append("image", file);
 
@@ -324,7 +334,7 @@
                         
                         await checkAutoApprove(matchId);
                         showToast("नतिजा बुझाइयो!");
-                        loadMatches();
+                        switchTab('result'); // नतिजा बुझाएपछि सिधै Result ट्याबमा लाने
                     } else {
                         throw new Error("ImgBB Upload Failed");
                     }

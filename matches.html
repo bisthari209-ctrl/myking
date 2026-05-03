@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Match Center | Mero Ludo</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { 
             --bg-dark: #0f172a; --card-bg: #1e293b; --gold: #fbbf24; 
@@ -24,33 +25,43 @@
         #toast.show { visibility: visible; opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
         .tabs { display: flex; background: #111827; position: sticky; top: 0; z-index: 1000; overflow-x: auto; padding: 5px; gap: 5px; }
-        .tab { 
-            flex: 1; padding: 14px 10px; text-align: center; cursor: pointer; 
-            font-weight: 800; font-size: 0.7rem; white-space: nowrap; 
-            text-transform: uppercase; transition: 0.3s; border-radius: 10px;
-            color: white; opacity: 0.5; border: 1px solid rgba(255,255,255,0.1);
-        }
+        .tab { flex: 1; padding: 14px 10px; text-align: center; cursor: pointer; font-weight: 800; font-size: 0.7rem; white-space: nowrap; text-transform: uppercase; transition: 0.3s; border-radius: 10px; color: white; opacity: 0.5; border: 1px solid rgba(255,255,255,0.1); }
+        .tab.active { opacity: 1; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transform: translateY(-2px); border: 2px solid white; }
         #tab-open { background: var(--color-join); }
         #tab-mine { background: var(--color-mine); }
         #tab-waiting { background: var(--color-waiting); }
         #tab-result { background: var(--color-result); }
-        .tab.active { opacity: 1; box-shadow: 0 4px 15px rgba(0,0,0,0.4); transform: translateY(-2px); border: 2px solid white; }
 
         .container { padding: 15px; }
         .match-card { background: var(--card-bg); border-radius: 20px; padding: 18px; margin-bottom: 20px; border: 1px solid var(--border-gold); position: relative; }
         .match-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; }
         .game-name { font-weight: 800; color: var(--gold); font-size: 1.1rem; }
         .entry-fee { background: rgba(251, 191, 36, 0.1); color: var(--gold); padding: 4px 12px; border-radius: 99px; border: 1px solid var(--gold); font-weight: 700; font-size: 0.8rem; }
-        .match-body { font-size: 0.9rem; color: var(--text-dim); }
-        .btn-group { margin-top: 15px; display: flex; gap: 10px; }
-        .action-btn { flex: 1; padding: 12px; border: none; border-radius: 12px; cursor: pointer; font-weight: 800; color: white; text-align: center; font-size: 0.8rem; text-transform: uppercase; }
-        .join-btn { background: linear-gradient(to right, #22c55e, #16a34a); }
-        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .btn-group { margin-top: 15px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .action-btn { flex: 1; padding: 10px; border: none; border-radius: 12px; cursor: pointer; font-weight: 800; color: white; font-size: 0.75rem; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .join-btn { background: #22c55e; }
+        .win-btn { background: #27ae60; }
+        .loss-btn { background: #e74c3c; }
+        .chat-btn { background: #6366f1; }
+        .room-btn { background: #f59e0b; }
 
-        .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(30, 41, 59, 0.95); display: flex; justify-content: space-around; padding: 12px 0; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); z-index: 1000; box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
-        .nav-item { text-align: center; color: var(--text-dim); font-size: 0.7rem; text-decoration: none; font-weight: 600; flex: 1; }
+        .room-box { background: rgba(251, 191, 36, 0.1); border: 1px dashed var(--gold); padding: 10px; border-radius: 10px; margin-top: 10px; text-align: center; color: var(--gold); font-weight: bold; }
+
+        #chatModal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; }
+        .chat-container { width:90%; max-width:400px; height:80vh; background:var(--card-bg); margin:10vh auto; border-radius:20px; display:flex; flex-direction:column; overflow:hidden; }
+        .chat-header { padding:15px; background:#111827; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-gold); }
+        #chatMessages { flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:10px; }
+        .msg { padding:10px 15px; border-radius:15px; max-width:80%; font-size:0.9rem; }
+        .msg.sent { align-self:flex-end; background:var(--color-mine); color:white; }
+        .msg.received { align-self:flex-start; background:#334155; color:white; }
+        .chat-input-area { padding:15px; background:#111827; display:flex; gap:10px; }
+        .chat-input-area input { flex:1; background:#0f172a; border:1px solid #334155; padding:10px; border-radius:10px; color:white; }
+
+        .bottom-nav { position: fixed; bottom: 15px; left: 15px; right: 15px; background: rgba(30, 41, 59, 0.95); display: flex; justify-content: space-around; padding: 12px 0; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); z-index: 1000; }
+        .nav-item { text-align: center; color: var(--text-dim); font-size: 0.7rem; text-decoration: none; flex: 1; }
         .nav-item.active { color: var(--gold); }
-        .nav-item i { font-size: 1.3rem; margin-bottom: 4px; display: block; }
+        .nav-item i { font-size: 1.2rem; margin-bottom: 4px; display: block; }
     </style>
 </head>
 <body>
@@ -58,15 +69,27 @@
     <div id="toast">सूचना...</div>
 
     <div class="tabs">
-        <div class="tab active" id="tab-open" onclick="switchTab('open')"><i class="fas fa-plus-circle"></i> Join</div>
-        <div class="tab" id="tab-mine" onclick="switchTab('mine')"><i class="fas fa-user-tag"></i> Mine</div>
-        <div class="tab" id="tab-waiting" onclick="switchTab('waiting')"><i class="fas fa-clock"></i> Waiting</div>
-        <div class="tab" id="tab-result" onclick="switchTab('result')"><i class="fas fa-trophy"></i> Result</div>
+        <div class="tab active" id="tab-open" onclick="switchTab('open')">Join</div>
+        <div class="tab" id="tab-mine" onclick="switchTab('mine')">Mine</div>
+        <div class="tab" id="tab-waiting" onclick="switchTab('waiting')">Waiting</div>
+        <div class="tab" id="tab-result" onclick="switchTab('result')">Result</div>
     </div>
 
     <div class="container">
-        <div id="matchList">
-            <p style="text-align:center; color:gray; margin-top:50px;">लोड हुँदैछ...</p>
+        <div id="matchList"></div>
+    </div>
+
+    <div id="chatModal">
+        <div class="chat-container">
+            <div class="chat-header">
+                <span id="chatTitle">Chat</span>
+                <i class="fas fa-times" onclick="closeChat()"></i>
+            </div>
+            <div id="chatMessages"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Type a message...">
+                <button onclick="sendMessage()" style="background:var(--gold); border:none; padding:10px 15px; border-radius:10px;"><i class="fas fa-paper-plane"></i></button>
+            </div>
         </div>
     </div>
 
@@ -80,7 +103,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, getDoc, getDocs, addDoc, serverTimestamp, orderBy, increment } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
@@ -94,16 +118,19 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+        const storage = getStorage(app);
 
         let currentUser = null;
-        let userBalance = 0;
+        let userData = {};
         let currentTab = 'open';
+        let activeChatId = null;
+        let chatUnsubscribe = null;
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 onSnapshot(doc(db, "users", user.uid), (snap) => {
-                    if(snap.exists()) userBalance = snap.data().balance;
+                    if(snap.exists()) userData = snap.data();
                 });
                 loadMatches();
             } else {
@@ -120,120 +147,211 @@
 
         function loadMatches() {
             const list = document.getElementById('matchList');
-            list.innerHTML = `<p style="text-align:center; color:gray;">म्याचहरू खोज्दै...</p>`;
-
+            list.innerHTML = `<p style="text-align:center; color:gray;">लोड हुँदैछ...</p>`;
             const matchesRef = collection(db, "matches");
             let q;
 
-            // म्याच देखाउने मुख्य लजिकमा सुधार
             if (currentTab === 'open') {
-                // यहाँ createdBy != currentUser हटाउनुहोस् किनकि यसले Index मा समस्या दिन्छ।
-                // यसको सट्टा सबै waiting म्याचहरू तान्ने र लुपभित्र आफ्नो हो कि होइन फिल्टर गर्ने।
                 q = query(matchesRef, where("status", "==", "waiting"));
             } else if (currentTab === 'mine') {
-                q = query(matchesRef, where("createdBy", "==", currentUser.uid));
+                q = query(matchesRef, where("createdBy", "==", currentUser.uid), where("status", "==", "waiting"));
             } else if (currentTab === 'waiting') {
-                // म्याच जोइन गरिसकेपछि तर गेम सुरु नहुँदैको अवस्था
-                q = query(matchesRef, where("joinedBy", "==", currentUser.uid), where("status", "==", "joined"));
+                q = query(matchesRef, where("allParticipants", "array-contains", currentUser.uid), where("status", "in", ["joined", "pending_review"]));
             } else {
-                q = query(matchesRef, where("status", "==", "result"));
+                q = query(matchesRef, where("allParticipants", "array-contains", currentUser.uid), where("status", "==", "result"));
             }
 
             onSnapshot(q, (snapshot) => {
                 list.innerHTML = "";
-                let foundMatches = 0;
-
-                if (snapshot.empty) {
-                    list.innerHTML = `<p style="text-align:center; color:gray; margin-top:30px;">कुनै म्याच भेटिएन।</p>`;
-                    return;
-                }
-
+                let count = 0;
                 snapshot.forEach((matchDoc) => {
                     const match = matchDoc.data();
-                    
-                    // 'Join' ट्याबमा आफ्नै म्याच नदेखाउने फिल्टर
+                    const matchId = matchDoc.id;
+
+                    // सुरक्षा फिल्टरहरू
                     if (currentTab === 'open' && match.createdBy === currentUser.uid) return;
+                    
+                    const userSubmitted = match[`result_${currentUser.uid}`];
+                    
+                    // नयाँ नियम: यदि यो प्रयोगकर्ताले रिजल्ट बुझाइसक्यो र ट्याब 'waiting' हो भने नदेखाउने
+                    if (currentTab === 'waiting' && userSubmitted) return;
 
-                    foundMatches++;
-                    const winPrize = (match.entryFee * 2) * 0.85; // १५% कमिसन काटेर
-
+                    count++;
+                    const winPrize = (match.entryFee * 2) * 0.85;
                     const card = document.createElement('div');
                     card.className = "match-card";
+                    
+                    let actionButtons = "";
+                    let roomDisplay = match.roomCode ? `<div class="room-box">ROOM CODE: ${match.roomCode}</div>` : "";
+
+                    if (currentTab === 'open') {
+                        actionButtons = `<button class="action-btn join-btn" onclick="joinMatch('${matchId}', ${match.entryFee})">JOIN NOW</button>`;
+                    } else if (currentTab === 'mine') {
+                        actionButtons = `<button class="action-btn" style="background:#475569;" disabled>WAITING FOR OPPONENT</button>`;
+                    } else if (match.status === 'joined' || match.status === 'pending_review') {
+                        actionButtons += `<button class="action-btn chat-btn" onclick="openChat('${matchId}')"><i class="fas fa-comments"></i></button>`;
+                        
+                        if (match.createdBy === currentUser.uid && !match.roomCode) {
+                            actionButtons += `<button class="action-btn room-btn" onclick="setRoomCode('${matchId}')">SET ROOM</button>`;
+                        }
+
+                        actionButtons += `
+                            <button class="action-btn win-btn" onclick="handleResult('${matchId}', 'win')">WIN</button>
+                            <button class="action-btn loss-btn" onclick="handleResult('${matchId}', 'loss')">LOSS</button>
+                        `;
+                    }
+
                     card.innerHTML = `
                         <div class="match-header">
-                            <span class="game-name">${match.game || 'Ludo Classic'}</span>
+                            <span class="game-name">${match.game || 'Ludo'}</span>
                             <span class="entry-fee">रू ${match.entryFee}</span>
                         </div>
                         <div class="match-body">
-                            <b>WIN PRIZE:</b> <span style="color:var(--gold)">रू ${winPrize.toFixed(0)}</span><br>
-                            <b>CREATOR:</b> ${match.playerName || 'Gamer'}
+                            <b>PRIZE:</b> रू ${winPrize.toFixed(0)} | <b>VS:</b> ${match.createdBy === currentUser.uid ? (match.joinedName || '...') : 'Creator'}
                         </div>
-                        <div class="btn-group">
-                            ${currentTab === 'open' ? `<button class="action-btn join-btn" onclick="joinMatch('${matchDoc.id}', ${match.entryFee})">JOIN NOW</button>` : ''}
-                            ${currentTab === 'mine' ? `<button class="action-btn" style="background:#475569;" disabled><i class="fas fa-spinner fa-spin"></i> WAITING...</button>` : ''}
-                            ${currentTab === 'waiting' ? `<button class="action-btn" style="background:var(--color-waiting);" onclick="viewRoom('${matchDoc.id}')">VIEW ROOM CODE</button>` : ''}
-                        </div>
+                        ${roomDisplay}
+                        <div class="btn-group">${actionButtons}</div>
                     `;
                     list.appendChild(card);
                 });
-
-                if (foundMatches === 0) {
-                    list.innerHTML = `<p style="text-align:center; color:gray; margin-top:30px;">अहिले कुनै उपलब्ध म्याच छैन।</p>`;
-                }
+                if(count === 0) list.innerHTML = `<p style="text-align:center; color:gray; margin-top:30px;">डाटा छैन।</p>`;
             });
         }
 
+        async function checkAutoApprove(matchId) {
+            const matchRef = doc(db, "matches", matchId);
+            const snap = await getDoc(matchRef);
+            const match = snap.data();
+            const p1 = match.createdBy;
+            const p2 = match.joinedBy;
+            const res1 = match[`result_${p1}`];
+            const res2 = match[`result_${p2}`];
+
+            if (res1 && res2) {
+                if (res1 !== res2) {
+                    const winnerId = (res1 === 'win') ? p1 : p2;
+                    const winAmt = (match.entryFee * 2) * 0.85;
+                    await updateDoc(matchRef, { status: "result", finalWinner: winnerId, closedAt: serverTimestamp() });
+                    await updateDoc(doc(db, "users", winnerId), { balance: increment(winAmt) });
+                } else {
+                    await updateDoc(matchRef, { status: "disputed" });
+                }
+            }
+        }
+
         window.joinMatch = async (matchId, fee) => {
-            if (userBalance < fee) {
-                showToast("ब्यालेन्स पुगेन! कृपया रिचार्ज गर्नुहोस्।");
-                return;
+            // अझै रिजल्ट बुझाउन बाँकी छ कि छैन चेक गर्ने
+            const qPending = query(
+                collection(db, "matches"), 
+                where("allParticipants", "array-contains", currentUser.uid),
+                where("status", "in", ["joined", "pending_review"])
+            );
+            
+            const activeCheck = await getDocs(qPending);
+            let mustSubmitFirst = false;
+            activeCheck.forEach(docSnap => {
+                if (!docSnap.data()[`result_${currentUser.uid}`]) mustSubmitFirst = true;
+            });
+
+            if (mustSubmitFirst) {
+                return Swal.fire("पर्खनुहोस्!", "तपाईंको एउटा गेमको नतिजा बुझाउन बाँकी छ।", "error");
             }
 
-            Swal.fire({
-                title: 'Join Match?',
-                text: `के तपाईं रू ${fee} तिरेर यो म्याच खेल्न चाहनुहुन्छ?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#22c55e',
-                cancelButtonColor: '#ef4444',
-                confirmButtonText: 'हो, जोइन गर्छु'
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    try {
-                        // म्याच अपडेट गर्ने
-                        await updateDoc(doc(db, "matches", matchId), {
-                            joinedBy: currentUser.uid,
-                            joinedName: auth.currentUser.displayName || "Player 2",
-                            status: "joined"
-                        });
-                        
-                        // ब्यालेन्स घटाउने
-                        await updateDoc(doc(db, "users", currentUser.uid), {
-                            balance: userBalance - fee
-                        });
-                        
-                        showToast("बधाई छ! तपाईं म्याचमा जोइन हुनुभयो।");
-                        switchTab('waiting');
-                    } catch (err) {
-                        console.error(err);
-                        showToast("गल्ती भयो! फेरि प्रयास गर्नुहोस्।");
-                    }
-                }
+            if (userData.balance < fee) return showToast("ब्यालेन्स पुगेन!");
+
+            const res = await Swal.fire({ title: 'Join?', text: "रू " + fee + " काटिनेछ।", showCancelButton: true });
+            if (res.isConfirmed) {
+                const matchRef = doc(db, "matches", matchId);
+                const matchSnap = await getDoc(matchRef);
+                const matchData = matchSnap.data();
+
+                if(matchData.status !== "waiting") return showToast("यो गेम अरुले जोइन गरिसक्यो!");
+
+                await updateDoc(matchRef, { 
+                    joinedBy: currentUser.uid, 
+                    joinedName: userData.name, 
+                    status: "joined",
+                    allParticipants: [currentUser.uid, matchData.createdBy]
+                });
+                await updateDoc(doc(db, "users", currentUser.uid), { balance: increment(-fee) });
+                showToast("जोइन सफल!");
+                switchTab('waiting');
+            }
+        };
+
+        window.handleResult = async (matchId, type) => {
+            const { value: file } = await Swal.fire({
+                title: 'Screenshot अपलोड गर्नुहोस',
+                input: 'file',
+                inputAttributes: { 'accept': 'image/*' },
+                showCancelButton: true
+            });
+
+            if (file) {
+                showToast("अपलोड हुँदैछ...");
+                const storageRef = ref(storage, `results/${matchId}_${currentUser.uid}`);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+
+                await updateDoc(doc(db, "matches", matchId), {
+                    status: "pending_review",
+                    [`proof_${currentUser.uid}`]: url,
+                    [`result_${currentUser.uid}`]: type
+                });
+                
+                await checkAutoApprove(matchId);
+                showToast("नतिजा बुझाइयो! अब वेटिङबाट हट्यो।");
+                loadMatches(); // म्यानुअल रिफ्रेस ताकि वेटिङबाट तुरुन्तै हटोस
+            }
+        };
+
+        window.setRoomCode = async (matchId) => {
+            const { value: code } = await Swal.fire({ title: 'Room Code', input: 'text', showCancelButton: true });
+            if (code) {
+                await updateDoc(doc(db, "matches", matchId), { roomCode: code });
+                showToast("कोड सेट भयो!");
+            }
+        };
+
+        window.openChat = (matchId) => {
+            activeChatId = matchId;
+            document.getElementById('chatModal').style.display = 'block';
+            const msgContainer = document.getElementById('chatMessages');
+            const q = query(collection(db, "matches", matchId, "messages"), orderBy("createdAt", "asc"));
+            chatUnsubscribe = onSnapshot(q, (snap) => {
+                msgContainer.innerHTML = "";
+                snap.forEach(d => {
+                    const m = d.data();
+                    const div = document.createElement('div');
+                    div.className = `msg ${m.senderId === currentUser.uid ? 'sent' : 'received'}`;
+                    div.innerText = m.text;
+                    msgContainer.appendChild(div);
+                });
+                msgContainer.scrollTop = msgContainer.scrollHeight;
             });
         };
 
-        window.viewRoom = (matchId) => {
-            // यहाँ रुम कोड देखाउने लजिक वा अर्को पेजमा पठाउने लजिक राख्न सकिन्छ
-            showToast("रुम कोड अहिले उपलब्ध छैन। वेट गर्नुहोस्।");
+        window.closeChat = () => {
+            document.getElementById('chatModal').style.display = 'none';
+            if(chatUnsubscribe) chatUnsubscribe();
+        };
+
+        window.sendMessage = async () => {
+            const input = document.getElementById('chatInput');
+            if(!input.value.trim() || !activeChatId) return;
+            await addDoc(collection(db, "matches", activeChatId, "messages"), {
+                text: input.value,
+                senderId: currentUser.uid,
+                createdAt: serverTimestamp()
+            });
+            input.value = "";
         };
 
         window.showToast = (msg) => {
             const t = document.getElementById("toast");
-            t.innerText = msg; 
-            t.classList.add("show");
-            setTimeout(() => { t.classList.remove("show"); }, 3000);
+            t.innerText = msg; t.classList.add("show");
+            setTimeout(() => t.classList.remove("show"), 3000);
         };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 </html>

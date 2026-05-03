@@ -55,7 +55,7 @@
         <div id="section-dashboard">
             <h1>Dashboard Overview</h1>
             <div class="stats-grid">
-                <div class="stat-card"><h3>कुल युजर</h3><p id="stat-totalUsers">0</p></div>
+                <div class="stat-card"><h3>कुल युजर</h3><p id="stat-totalUsers">लोड हुँदै...</p></div>
                 <div class="stat-card"><h3>डिपोजिट पेन्डिङ</h3><p id="stat-pendingDeposit">0</p></div>
                 <div class="stat-card"><h3>विथड्र पेन्डिङ</h3><p id="stat-pendingWithdraw">0</p></div>
                 <div class="stat-card"><h3>कुल म्याच</h3><p id="stat-matchCount">0</p></div>
@@ -68,7 +68,7 @@
         </div>
 
         <div id="section-matches" class="hidden">
-            <h1>Match Disputes</h1>
+            <h1>Match Disputes (Result Pending)</h1>
             <div class="card"><table><thead><tr><th>ID</th><th>Players</th><th>Screenshot</th><th>Claims</th><th>Action</th></tr></thead><tbody id="matchListBody"></tbody></table></div>
         </div>
 
@@ -92,10 +92,7 @@
                 </div>
                 <p>हालको सिस्टम कोड: <span id="currentSystemCode" style="color:var(--danger); font-weight:bold;">---</span></p>
             </div>
-            <div class="card">
-                <h3>Draw History</h3>
-                <table><thead><tr><th>Time</th><th>Name (UID)</th><th>Box</th><th>User No.</th><th>Result</th></tr></thead><tbody id="luckyDrawListBody"></tbody></table>
-            </div>
+            <div class="card"><h3>Draw History</h3><table><thead><tr><th>Time</th><th>Name (UID)</th><th>Box</th><th>User No.</th><th>Result</th></tr></thead><tbody id="luckyDrawListBody"></tbody></table></div>
         </div>
 
         <div id="section-users" class="hidden">
@@ -123,7 +120,7 @@
             apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
             authDomain: "harishbist-3a263.firebaseapp.com",
             projectId: "harishbist-3a263",
-            storageBucket: "harishbist-3a263.appspot.com",
+            storageBucket: "harishbist-3a263.firebasestorage.app", // Fixed: Correct Bucket URL
             messagingSenderId: "816353842957",
             appId: "1:816353842957:web:5b853c5bed6450fc544244"
         };
@@ -132,13 +129,30 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
 
+        // Global functions to make them accessible from HTML
+        window.showSection = (id) => {
+            document.querySelectorAll('.main-content > div').forEach(d => d.classList.add('hidden'));
+            document.getElementById('section-' + id).classList.remove('hidden');
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            if(window.innerWidth <= 768) toggleSidebar();
+        };
+
+        window.toggleSidebar = () => {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('active');
+        };
+
         onAuthStateChanged(auth, (user) => {
-            if (!user) signInAnonymously(auth);
-            else loadAllData();
+            if (user) {
+                console.log("Logged in as:", user.uid);
+                loadAllData();
+            } else {
+                signInAnonymously(auth);
+            }
         });
 
         function loadAllData() {
-            // USERS
+            // १. युजर डाटा लोड गर्ने
             onSnapshot(collection(db, 'users'), (snap) => {
                 const list = document.getElementById('userListBody');
                 list.innerHTML = ""; let uCount = 0;
@@ -149,9 +163,8 @@
                 document.getElementById('stat-totalUsers').innerText = uCount;
             });
 
-            // DEPOSITS (Pending only)
-            const depQuery = query(collection(db, 'deposits'), where('status', '==', 'pending'));
-            onSnapshot(depQuery, (snap) => {
+            // २. डिपोजिट पेन्डिङ मात्र देखाउने
+            onSnapshot(query(collection(db, 'deposits'), where('status', '==', 'pending')), (snap) => {
                 const list = document.getElementById('depositListBody');
                 list.innerHTML = ""; let count = 0;
                 snap.forEach(c => {
@@ -161,173 +174,81 @@
                 document.getElementById('stat-pendingDeposit').innerText = count;
             });
 
-            // WITHDRAWS (Pending only)
-            const withQuery = query(collection(db, 'withdraws'), where('status', '==', 'pending'));
-            onSnapshot(withQuery, (snap) => {
+            // ३. विथड्र पेन्डिङ मात्र देखाउने
+            onSnapshot(query(collection(db, 'withdraws'), where('status', '==', 'pending')), (snap) => {
                 const list = document.getElementById('withdrawListBody');
                 list.innerHTML = ""; let count = 0;
                 snap.forEach(c => {
                     count++; const w = c.data();
-                    list.innerHTML += `<tr><td>${w.uid}</td><td>${w.method}</td><td>${w.wallet}</td><td>रू ${w.amount}</td><td><div class="btn-group"><button class="action-btn approve" onclick="updateStatus('withdraws', '${c.id}', 'completed')">Complete</button><button class="action-btn reject" onclick="rejectWithdraw('${c.id}','${w.uid}',${w.amount})">Reject</button></div></td></tr>`;
+                    list.innerHTML += `<tr><td>${w.uid}</td><td>${w.method}</td><td>${w.wallet}</td><td>रू ${w.amount}</td><td><div class="btn-group"><button class="action-btn approve" onclick="updateStatus('withdraws', '${c.id}', 'completed')">Done</button><button class="action-btn reject" onclick="rejectWithdraw('${c.id}','${w.uid}',${w.amount})">Reject</button></div></td></tr>`;
                 });
                 document.getElementById('stat-pendingWithdraw').innerText = count;
             });
 
-            // MATCHES
+            // ४. म्याच र विवाद (Dispute) हेर्ने
             onSnapshot(collection(db, 'matches'), (snap) => {
                 const dList = document.getElementById('matchListBody');
                 const bList = document.getElementById('matchBoxList');
                 dList.innerHTML = ""; bList.innerHTML = ""; let mCount = 0;
                 snap.forEach(c => {
                     mCount++; const m = c.data();
-                    const entryFee = m.entryFee || m.entry || 0;
-                    const winPrize = m.winPrize || (entryFee * 2 * 0.85);
+                    const fee = m.entryFee || 0;
+                    const winAmt = fee * 2 * 0.90; // १०% एडमिन चार्ज काटेर
 
-                    bList.innerHTML += `<tr><td>${c.id}</td><td>${m.createdBy || m.creatorId}</td><td>${m.joinedBy || m.joinerId || 'Waiting'}</td><td>रू ${entryFee}</td><td>${m.status}</td><td><button class="action-btn reject" onclick="rejectRequest('matches', '${c.id}')">Del</button></td></tr>`;
+                    bList.innerHTML += `<tr><td>${c.id}</td><td>${m.creatorName || 'C'}</td><td>${m.joinerName || 'Waiting'}</td><td>रू ${fee}</td><td>${m.status}</td><td><button class="action-btn reject" onclick="rejectRequest('matches', '${c.id}')">Delete</button></td></tr>`;
                     
-                    // DISPUTE म्याचहरू यहाँ देखाउने
-                    if(m.status === 'dispute' || m.status === 'disputed'){
-                        dList.innerHTML += `
-                        <tr>
-                            <td>${c.id}</td>
-                            <td>C: ${m.createdBy || m.creatorId}<br>J: ${m.joinedBy || m.joinerId}</td>
-                            <td>
-                                <img src="${m.proof_creator || m.creator_proof}" class="ss-thumb" onclick="zoomImg('${m.proof_creator || m.creator_proof}')" onerror="this.style.display='none'">
-                                <img src="${m.proof_joined || m.joiner_proof}" class="ss-thumb" onclick="zoomImg('${m.proof_joined || m.joiner_proof}')" onerror="this.style.display='none'">
-                            </td>
-                            <td>C: ${m.result_creator || m.creator_claim || '?'}<br>J: ${m.result_joined || m.joiner_claim || '?'}</td>
-                            <td>
-                                <div class="btn-group">
-                                    <button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.createdBy || m.creatorId}', ${winPrize})">Win C</button>
-                                    <button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.joinedBy || m.joinerId}', ${winPrize})">Win J</button>
-                                    <button class="action-btn reject" onclick="cancelMatch('${c.id}', ${entryFee})">Cancel</button>
-                                </div>
-                            </td>
-                        </tr>`;
+                    if(m.status === 'dispute' || m.status === 'disputed' || m.status === 'pending'){
+                        dList.innerHTML += `<tr><td>${c.id}</td><td>C: ${m.creatorName}<br>J: ${m.joinerName}</td><td><img src="${m.proof_creator}" class="ss-thumb" onclick="zoomImg('${m.proof_creator}')"><img src="${m.proof_joiner}" class="ss-thumb" onclick="zoomImg('${m.proof_joiner}')"></td><td>C: ${m.creator_claim}<br>J: ${m.joiner_claim}</td><td><div class="btn-group"><button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.creatorId}', ${winAmt})">C Win</button><button class="action-btn approve" onclick="finalizeMatch('${c.id}','${m.joinerId}', ${winAmt})">J Win</button><button class="action-btn reject" onclick="cancelMatch('${c.id}', ${fee})">Refund</button></div></td></tr>`;
                     }
                 });
                 document.getElementById('stat-matchCount').innerText = mCount;
             });
-
-            // SETTINGS
-            onSnapshot(doc(db, 'settings', 'global'), (s) => {
-                if(s.exists()){
-                    const data = s.data();
-                    document.getElementById('currentSystemCode').innerText = data.luckySystemCode || '---';
-                    document.getElementById('appLinkInput').value = data.downloadLink || "";
-                    document.getElementById('noticeText').value = data.notice || "";
-                }
-            });
-
-            // LUCKY DRAW HISTORY
-            const luckyQuery = query(collection(db, 'luckyDrawHistory'), orderBy('time', 'desc'));
-            onSnapshot(luckyQuery, (s) => {
-                const list = document.getElementById('luckyDrawListBody');
-                list.innerHTML = "";
-                s.forEach(c => {
-                    const d = c.data();
-                    list.innerHTML += `<tr><td>${new Date(d.time).toLocaleString()}</td><td>${d.name}<br><small>${d.uid}</small></td><td>${d.box}</td><td>${d.userNumber}</td><td style="color:${d.result==='WIN'?'green':'red'}">${d.result}</td></tr>`;
-                });
-            });
         }
 
-        // Firestore Functions
+        // --- Business Logic Functions ---
         window.editBalance = (uid, old) => {
             const val = prompt("नयाँ ब्यालेन्स हाल्नुहोस्:", old);
             if(val) updateDoc(doc(db, 'users', uid), { balance: parseFloat(val) });
         };
 
         window.approveDeposit = async (id, uid, amt) => {
-            const userRef = doc(db, 'users', uid);
-            await runTransaction(db, async (transaction) => {
-                const userSnap = await transaction.get(userRef);
-                const newBalance = (userSnap.data().balance || 0) + parseFloat(amt);
-                transaction.update(userRef, { balance: newBalance });
-                transaction.update(doc(db, 'deposits', id), { status: 'approved' });
-            });
-            Swal.fire("Success", "डिपोजिट स्वीकृत भयो", "success");
+            try {
+                const userRef = doc(db, 'users', uid);
+                await runTransaction(db, async (t) => {
+                    const snap = await t.get(userRef);
+                    t.update(userRef, { balance: (snap.data().balance || 0) + parseFloat(amt) });
+                    t.update(doc(db, 'deposits', id), { status: 'approved' });
+                });
+                Swal.fire("Success", "ब्यालेन्स थपियो", "success");
+            } catch(e) { Swal.fire("Error", e.message, "error"); }
+        };
+
+        window.finalizeMatch = async (mid, wid, prize) => {
+            try {
+                const userRef = doc(db, 'users', wid);
+                await runTransaction(db, async (t) => {
+                    const snap = await t.get(userRef);
+                    t.update(userRef, { balance: (snap.data().balance || 0) + parseFloat(prize) });
+                    t.update(doc(db, 'matches', mid), { status: 'completed', winner: wid });
+                });
+                Swal.fire("Success", "बिजेतालाई पैसा पठाइयो", "success");
+            } catch(e) { Swal.fire("Error", e.message, "error"); }
         };
 
         window.rejectWithdraw = async (id, uid, amt) => {
             const userRef = doc(db, 'users', uid);
-            await runTransaction(db, async (transaction) => {
-                const userSnap = await transaction.get(userRef);
-                const newBalance = (userSnap.data().balance || 0) + parseFloat(amt);
-                transaction.update(userRef, { balance: newBalance });
-                transaction.delete(doc(db, 'withdraws', id));
+            await runTransaction(db, async (t) => {
+                const snap = await t.get(userRef);
+                t.update(userRef, { balance: (snap.data().balance || 0) + parseFloat(amt) });
+                t.delete(doc(db, 'withdraws', id));
             });
-            Swal.fire("Rejected", "रकम फिर्ता गरियो", "error");
-        };
-
-        // अपडेट गरिएको finalizeMatch फङ्सन
-        window.finalizeMatch = async (mid, wid, prize) => {
-            if(!wid) return Swal.fire("Error", "खेलाडीको ID भेटिएन!", "error");
-            
-            const userRef = doc(db, 'users', wid);
-            const matchRef = doc(db, 'matches', mid);
-
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const userSnap = await transaction.get(userRef);
-                    if (!userSnap.exists()) throw "User does not exist!";
-                    
-                    const newBalance = (userSnap.data().balance || 0) + parseFloat(prize);
-                    transaction.update(userRef, { balance: newBalance });
-                    transaction.update(matchRef, { 
-                        status: 'result', 
-                        finalWinner: wid, 
-                        closedAt: new Date().toISOString() 
-                    });
-                });
-                Swal.fire("Success", "बिजेता घोषित भयो र रकम पठाइयो।", "success");
-            } catch (e) {
-                Swal.fire("Error", "Process failed: " + e, "error");
-            }
-        };
-
-        window.cancelMatch = async (mid, entry) => {
-            const mRef = doc(db, 'matches', mid);
-            const mSnap = await getDoc(mRef);
-            const m = mSnap.data();
-            
-            await runTransaction(db, async (transaction) => {
-                const cRef = doc(db, 'users', m.createdBy || m.creatorId);
-                const cSnap = await transaction.get(cRef);
-                transaction.update(cRef, { balance: (cSnap.data().balance || 0) + parseFloat(entry) });
-
-                if(m.joinedBy || m.joinerId) {
-                    const jRef = doc(db, 'users', m.joinedBy || m.joinerId);
-                    const jSnap = await transaction.get(jRef);
-                    transaction.update(jRef, { balance: (jSnap.data().balance || 0) + parseFloat(entry) });
-                }
-                transaction.delete(mRef);
-            });
-            Swal.fire("Cancelled", "म्याच रद्द भयो र ब्यालेन्स फिर्ता गरियो", "info");
-        };
-
-        window.updateLuckyCode = () => {
-            const code = document.getElementById('luckyCodeInput').value;
-            setDoc(doc(db, 'settings', 'global'), { luckySystemCode: code }, { merge: true }).then(() => Swal.fire("Updated", "कोड सेभ भयो", "success"));
-        };
-
-        window.saveSettings = () => {
-            updateDoc(doc(db, 'settings', 'global'), { notice: document.getElementById('noticeText').value, downloadLink: document.getElementById('appLinkInput').value }).then(() => Swal.fire("Saved", "सेटिंग्स सेभ भयो", "success"));
+            Swal.fire("Refunded", "रकम फिर्ता भयो", "info");
         };
 
         window.updateStatus = (coll, id, s) => updateDoc(doc(db, coll, id), { status: s });
         window.rejectRequest = (coll, id) => confirm("Are you sure?") && deleteDoc(doc(db, coll, id));
-
-        window.showSection = (id) => {
-            document.querySelectorAll('.main-content > div').forEach(d => d.classList.add('hidden'));
-            document.getElementById('section-' + id).classList.remove('hidden');
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            if(window.innerWidth <= 768) toggleSidebar();
-        };
-        window.toggleSidebar = () => {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('overlay').classList.toggle('active');
-        };
         window.zoomImg = (url) => url && Swal.fire({ imageUrl: url, imageAlt: 'Proof', width: '90%' });
+        
         window.filterUsers = () => {
             let input = document.getElementById("userSearchInput").value.toUpperCase();
             let tr = document.getElementById("userListBody").getElementsByTagName("tr");

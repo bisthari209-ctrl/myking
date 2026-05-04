@@ -9,19 +9,33 @@
     <style>
         :root { --primary: #1a252f; --accent: #f1c40f; --danger: #e74c3c; --success: #27ae60; --sidebar-width: 250px; --blue: #3498db; }
         body { font-family: sans-serif; margin: 0; background: #f4f7f6; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar Styles */
         .menu-toggle { display: block; position: fixed; top: 15px; left: 15px; z-index: 2001; background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
         .sidebar { width: var(--sidebar-width); background: var(--primary); color: white; padding: 20px; box-sizing: border-box; transition: 0.3s; z-index: 2000; }
         .sidebar h2 { color: var(--accent); font-size: 1.2rem; text-align: center; border-bottom: 1px solid #34495e; padding-bottom: 15px; }
         .nav-link { display: block; color: #bdc3c7; padding: 12px; text-decoration: none; margin-bottom: 5px; border-radius: 5px; cursor: pointer; }
         .nav-link:hover, .nav-link.active { background: #34495e; color: white; }
+        
+        /* Main Content */
         .main-content { flex: 1; overflow-y: auto; padding: 25px; transition: 0.3s; position: relative; padding-top: 70px; }
         .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        .ss-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 1px solid #ddd; margin-right: 5px; }
-        @media (max-width: 768px) { .sidebar { position: fixed; left: -250px; height: 100%; } .sidebar.open { left: 0; } .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1999; } .overlay.active { display: block; } }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .stat-card { background: white; padding: 15px; border-radius: 10px; border-top: 4px solid var(--accent); text-align: center; }
+        
+        /* Dashboard Grid & Boxes */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { background: white; padding: 20px; border-radius: 10px; border-top: 4px solid var(--accent); text-align: center; }
+        
+        .action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
+        .action-box { background: white; padding: 20px; border-radius: 12px; text-align: center; cursor: pointer; transition: 0.3s; border: 1px solid #eee; box-shadow: 0 4px 6px rgba(0,0,0,0.03); }
+        .action-box:hover { transform: translateY(-5px); background: var(--primary); color: white; border-color: var(--primary); }
+        .action-box i { font-size: 2rem; margin-bottom: 10px; color: var(--blue); }
+        .action-box:hover i { color: var(--accent); }
+        .action-box p { margin: 0; font-weight: bold; font-size: 0.9rem; }
+
+        /* Tables & Elements */
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+        .ss-thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; cursor: pointer; border: 1px solid #ddd; }
         .action-btn { padding: 8px 12px; border: none; border-radius: 4px; color: white; cursor: pointer; font-size: 0.75rem; font-weight: bold; }
         .approve { background: var(--success); }
         .reject { background: var(--danger); }
@@ -29,7 +43,8 @@
         .hidden { display: none; }
         input, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-top: 10px; margin-bottom: 15px; box-sizing: border-box; }
         .dispute-card { border: 2px solid var(--danger); background: #fff5f5; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        #userSearchInput { background: #fff; border: 2px solid var(--blue); }
+
+        @media (max-width: 768px) { .sidebar { position: fixed; left: -250px; height: 100%; } .sidebar.open { left: 0; } .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1999; } .overlay.active { display: block; } }
     </style>
 </head>
 <body>
@@ -52,22 +67,36 @@
     <div class="main-content">
         <div id="section-dashboard">
             <h1>Dashboard Overview</h1>
+            
             <div class="stats-grid">
                 <div class="stat-card"><h3>कुल युजर</h3><p id="stat-totalUsers">0</p></div>
                 <div class="stat-card" style="border-top-color: var(--danger);"><h3>विवादित म्याच</h3><p id="stat-disputeCount">0</p></div>
                 <div class="stat-card"><h3>डिपोजिट पेन्डिङ</h3><p id="stat-pendingDeposit">0</p></div>
                 <div class="stat-card"><h3>कुल म्याच</h3><p id="stat-matchCount">0</p></div>
             </div>
+
+            <hr style="border: 0.5px solid #ddd; margin: 30px 0;">
+            <h3>Quick Actions</h3>
+            <div class="action-grid">
+                <div class="action-box" onclick="showSection('matches')"><i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i><p>Disputes</p></div>
+                <div class="action-box" onclick="showSection('matchbox')"><i class="fas fa-list"></i><p>Match Box</p></div>
+                <div class="action-box" onclick="showSection('deposits')"><i class="fas fa-wallet" style="color: var(--success);"></i><p>Deposits</p></div>
+                <div class="action-box" onclick="showSection('withdraws')"><i class="fas fa-university"></i><p>Withdraws</p></div>
+                <div class="action-box" onclick="showSection('luckydraw')"><i class="fas fa-ticket-alt" style="color: var(--accent);"></i><p>Lucky Draw</p></div>
+                <div class="action-box" onclick="showSection('users')"><i class="fas fa-users"></i><p>Users</p></div>
+                <div class="action-box" onclick="showSection('settings')"><i class="fas fa-cog"></i><p>Settings</p></div>
+            </div>
         </div>
 
         <div id="section-matches" class="hidden">
-            <h1>Disputed Matches (Result Claims)</h1>
+            <h1>Disputed Matches</h1>
             <div id="disputeList"></div>
         </div>
 
         <div id="section-matchbox" class="hidden"><h1>Match Box</h1><div class="card"><table><thead><tr><th>ID</th><th>Creator</th><th>Joiner</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="matchBoxList"></tbody></table></div></div>
         
         <div id="section-deposits" class="hidden"><h1>Deposits</h1><div class="card"><table><thead><tr><th>User</th><th>Amount</th><th>Proof</th><th>Action</th></tr></thead><tbody id="depositListBody"></tbody></table></div></div>
+        
         <div id="section-withdraws" class="hidden"><h1>Withdraws</h1><div class="card"><table><thead><tr><th>User</th><th>Method</th><th>Wallet</th><th>Amount</th><th>Action</th></tr></thead><tbody id="withdrawListBody"></tbody></table></div></div>
         
         <div id="section-users" class="hidden">
@@ -79,12 +108,12 @@
         </div>
 
         <div id="section-luckydraw" class="hidden">
-            <h1>Lucky Draw Management</h1>
+            <h1>Lucky Draw</h1>
             <div class="card" style="background:#fffbe6; border: 1px solid #f1c40f;">
-                <h3>Set System Lucky Code</h3>
+                <h3>Set Lucky Code</h3>
                 <div style="display:flex; gap:10px; align-items: flex-end;">
-                    <div style="flex:1;"><input type="text" id="luckyCodeInput" placeholder="उदा: 12345" maxlength="5"></div>
-                    <button class="action-btn approve" style="height: 45px; margin-bottom: 15px;" id="btnUpdateLucky">Update Code</button>
+                    <div style="flex:1;"><input type="text" id="luckyCodeInput" placeholder="५ अंकको कोड" maxlength="5"></div>
+                    <button class="action-btn approve" style="height: 45px; margin-bottom: 15px;" id="btnUpdateLucky">Update</button>
                 </div>
                 <p>हालको कोड: <span id="currentSystemCode" style="font-weight:bold; color:red;">---</span></p>
             </div>
@@ -95,7 +124,7 @@
             <h1>Settings</h1>
             <div class="card">
                 <label>Notice Content:</label>
-                <textarea id="noticeText" rows="6" placeholder="यहाँ सूचना लेख्नुहोस्..."></textarea>
+                <textarea id="noticeText" rows="6" placeholder="सूचना यहाँ लेख्नुहोस्..."></textarea>
                 <button class="action-btn approve" style="width:100%;" id="btnSaveSettings">Update Notice</button>
             </div>
         </div>
@@ -123,6 +152,13 @@
             document.querySelectorAll('.main-content > div').forEach(d => d.classList.add('hidden'));
             document.getElementById('section-' + id).classList.remove('hidden');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            
+            // Highlight current sidebar link
+            const links = document.querySelectorAll('.nav-link');
+            links.forEach(link => {
+                if(link.getAttribute('onclick').includes(id)) link.classList.add('active');
+            });
+            if(window.innerWidth <= 768) toggleSidebar();
         };
 
         window.toggleSidebar = () => {
@@ -136,29 +172,27 @@
         });
 
         function loadData() {
-            // --- १. Settings & Notice Load ---
+            // Load Notice
             onSnapshot(doc(db, "settings", "admin_notice"), (snap) => {
                 if(snap.exists()) document.getElementById('noticeText').value = snap.data().text || "";
             });
 
-            // --- २. Lucky Draw Code Load ---
+            // Load Lucky Code
             onSnapshot(doc(db, "settings", "lucky_draw"), (snap) => {
                 if(snap.exists()) document.getElementById('currentSystemCode').innerText = snap.data().code || "---";
             });
 
-            // --- ३. Users Load ---
+            // Load Users
             onSnapshot(collection(db, 'users'), (snap) => {
                 const list = document.getElementById('userListBody');
                 list.innerHTML = ""; document.getElementById('stat-totalUsers').innerText = snap.size;
                 snap.forEach(c => {
                     const u = c.data();
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${c.id.slice(0,8)}</td><td>${u.name || 'User'}</td><td>रू ${u.balance || 0}</td><td><button class="action-btn edit-btn" onclick="editBalance('${c.id}',${u.balance})">Edit</button></td>`;
-                    list.appendChild(tr);
+                    list.innerHTML += `<tr><td>${c.id.slice(0,8)}</td><td>${u.name || 'User'}</td><td>रू ${u.balance || 0}</td><td><button class="action-btn edit-btn" onclick="editBalance('${c.id}',${u.balance})">Edit</button></td></tr>`;
                 });
             });
 
-            // --- ४. Disputed Matches ---
+            // Disputed Matches
             onSnapshot(query(collection(db, 'matches'), where('status', '==', 'disputed')), (snap) => {
                 document.getElementById('stat-disputeCount').innerText = snap.size;
                 const list = document.getElementById('disputeList');
@@ -167,60 +201,53 @@
                     const m = docSnap.data();
                     const winAmt = (m.entryFee * 2) * 0.85;
                     list.innerHTML += `<div class="dispute-card">
-                        <p>ID: ${docSnap.id} | Amount: ${m.entryFee}</p>
+                        <p>ID: ${docSnap.id} | Entry: ${m.entryFee}</p>
                         <div style="display:flex; justify-content:space-around;">
-                            <div style="text-align:center;">
-                                <p>Creator</p>
-                                <img src="${m['proof_'+m.createdBy]}" class="ss-thumb" style="width:80px;height:120px" onclick="window.zoomImg('${m['proof_'+m.createdBy]}')">
-                                <br><button class="action-btn approve" onclick="resolveMatch('${docSnap.id}','${m.createdBy}',${winAmt})">Winner</button>
-                            </div>
-                            <div style="text-align:center;">
-                                <p>Joiner</p>
-                                <img src="${m['proof_'+m.joinedBy]}" class="ss-thumb" style="width:80px;height:120px" onclick="window.zoomImg('${m['proof_'+m.joinedBy]}')">
-                                <br><button class="action-btn approve" onclick="resolveMatch('${docSnap.id}','${m.joinedBy}',${winAmt})">Winner</button>
-                            </div>
+                            <div style="text-align:center;"><p>Creator</p><img src="${m['proof_'+m.createdBy]}" class="ss-thumb" style="width:80px;height:120px" onclick="window.zoomImg('${m['proof_'+m.createdBy]}')"><br><button class="action-btn approve" onclick="resolveMatch('${docSnap.id}','${m.createdBy}',${winAmt})">Winner</button></div>
+                            <div style="text-align:center;"><p>Joiner</p><img src="${m['proof_'+m.joinedBy]}" class="ss-thumb" style="width:80px;height:120px" onclick="window.zoomImg('${m['proof_'+m.joinedBy]}')"><br><button class="action-btn approve" onclick="resolveMatch('${docSnap.id}','${m.joinedBy}',${winAmt})">Winner</button></div>
                         </div>
                     </div>`;
                 });
             });
 
-            // Match Box, Deposits, Lucky Tickets (Existing flows)
+            // Match Box & Deposits Count
             onSnapshot(collection(db, 'matches'), snap => document.getElementById('stat-matchCount').innerText = snap.size);
             onSnapshot(query(collection(db, 'deposits'), where('status', '==', 'pending')), snap => document.getElementById('stat-pendingDeposit').innerText = snap.size);
+            
+            // Match Box List
+            onSnapshot(collection(db, 'matches'), (snap) => {
+                const list = document.getElementById('matchBoxList');
+                list.innerHTML = "";
+                snap.forEach(c => {
+                    const m = c.data();
+                    list.innerHTML += `<tr><td>${c.id.slice(-5)}</td><td>${m.createdBy.slice(0,5)}</td><td>${m.joinedBy ? m.joinedBy.slice(0,5) : 'Wait'}</td><td>${m.entryFee}</td><td>${m.status}</td><td><button class="action-btn reject" onclick="deleteMatch('${c.id}')">Delete</button></td></tr>`;
+                });
+            });
         }
 
-        // --- बटन अपडेट फसनहरू ---
-
-        // १. Notice Update
+        // --- Event Listeners ---
         document.getElementById('btnSaveSettings').onclick = async () => {
-            const txt = document.getElementById('noticeText').value;
             try {
-                await setDoc(doc(db, "settings", "admin_notice"), { text: txt }, { merge: true });
+                await setDoc(doc(db, "settings", "admin_notice"), { text: document.getElementById('noticeText').value }, { merge: true });
                 Swal.fire("सफलता", "सूचना अपडेट भयो!", "success");
             } catch(e) { Swal.fire("Error", e.message, "error"); }
         };
 
-        // २. Lucky Code Update
         document.getElementById('btnUpdateLucky').onclick = async () => {
             const code = document.getElementById('luckyCodeInput').value;
-            if(code.length < 1) return;
+            if(!code) return;
             try {
                 await setDoc(doc(db, "settings", "lucky_draw"), { code: code }, { merge: true });
-                Swal.fire("सफलता", "लक्की कोड परिवर्तन भयो!", "success");
+                Swal.fire("सफलता", "कोड अपडेट भयो!", "success");
             } catch(e) { Swal.fire("Error", e.message, "error"); }
         };
 
-        // ३. User Search Function
         window.searchUser = () => {
             const input = document.getElementById("userSearchInput").value.toLowerCase();
             const rows = document.getElementById("userListBody").getElementsByTagName("tr");
-            for (let row of rows) {
-                const text = row.innerText.toLowerCase();
-                row.style.display = text.includes(input) ? "" : "none";
-            }
+            for (let row of rows) row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
         };
 
-        // Action Logic (Existing)
         window.resolveMatch = async (id, uid, amt) => {
             if(!confirm("Winner बनाउने?")) return;
             await runTransaction(db, async (t) => {
@@ -235,6 +262,7 @@
             const val = prompt("नयाँ ब्यालेन्स:", old);
             if(val) updateDoc(doc(db, 'users', uid), { balance: parseFloat(val) });
         };
+        window.deleteMatch = (id) => confirm("Delete?") && deleteDoc(doc(db, 'matches', id));
     </script>
 </body>
 </html>

@@ -19,7 +19,7 @@
         
         /* Main Content */
         .main-content { flex: 1; overflow-y: auto; padding: 25px; transition: 0.3s; position: relative; padding-top: 70px; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; overflow-x: auto; }
         
         /* Dashboard Grid & Boxes */
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 30px; }
@@ -67,14 +67,12 @@
     <div class="main-content">
         <div id="section-dashboard">
             <h1>Dashboard Overview</h1>
-            
             <div class="stats-grid">
                 <div class="stat-card"><h3>कुल युजर</h3><p id="stat-totalUsers">0</p></div>
                 <div class="stat-card" style="border-top-color: var(--danger);"><h3>विवादित म्याच</h3><p id="stat-disputeCount">0</p></div>
                 <div class="stat-card"><h3>डिपोजिट पेन्डिङ</h3><p id="stat-pendingDeposit">0</p></div>
                 <div class="stat-card"><h3>कुल म्याच</h3><p id="stat-matchCount">0</p></div>
             </div>
-
             <hr style="border: 0.5px solid #ddd; margin: 30px 0;">
             <h3>Quick Actions</h3>
             <div class="action-grid">
@@ -88,51 +86,27 @@
             </div>
         </div>
 
-        <div id="section-matches" class="hidden">
-            <h1>Disputed Matches</h1>
-            <div id="disputeList"></div>
-        </div>
-
+        <div id="section-matches" class="hidden"><h1>Disputed Matches</h1><div id="disputeList"></div></div>
         <div id="section-matchbox" class="hidden"><h1>Match Box</h1><div class="card"><table><thead><tr><th>ID</th><th>Creator</th><th>Joiner</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="matchBoxList"></tbody></table></div></div>
         
-        <div id="section-deposits" class="hidden"><h1>Deposits</h1><div class="card"><table><thead><tr><th>User</th><th>Amount</th><th>Proof</th><th>Action</th></tr></thead><tbody id="depositListBody"></tbody></table></div></div>
+        <div id="section-deposits" class="hidden">
+            <h1>Pending Deposits</h1>
+            <div class="card"><table><thead><tr><th>User UID</th><th>Amount</th><th>Proof</th><th>Action</th></tr></thead><tbody id="depositListBody"></tbody></table></div>
+        </div>
         
-        <div id="section-withdraws" class="hidden"><h1>Withdraws</h1><div class="card"><table><thead><tr><th>User</th><th>Method</th><th>Wallet</th><th>Amount</th><th>Action</th></tr></thead><tbody id="withdrawListBody"></tbody></table></div></div>
+        <div id="section-withdraws" class="hidden">
+            <h1>Pending Withdraws</h1>
+            <div class="card"><table><thead><tr><th>User UID</th><th>Amount</th><th>Method/Wallet</th><th>Action</th></tr></thead><tbody id="withdrawListBody"></tbody></table></div>
+        </div>
         
-        <div id="section-users" class="hidden">
-            <h1>Manage Users</h1>
-            <div class="card">
-                <input type="text" id="userSearchInput" placeholder="युजरको नाम वा ID खोज्नुहोस्..." onkeyup="searchUser()">
-                <table><thead><tr><th>UID</th><th>Name</th><th>Balance</th><th>Action</th></tr></thead><tbody id="userListBody"></tbody></table>
-            </div>
-        </div>
-
-        <div id="section-luckydraw" class="hidden">
-            <h1>Lucky Draw</h1>
-            <div class="card" style="background:#fffbe6; border: 1px solid #f1c40f;">
-                <h3>Set Lucky Code</h3>
-                <div style="display:flex; gap:10px; align-items: flex-end;">
-                    <div style="flex:1;"><input type="text" id="luckyCodeInput" placeholder="५ अंकको कोड" maxlength="5"></div>
-                    <button class="action-btn approve" style="height: 45px; margin-bottom: 15px;" id="btnUpdateLucky">Update</button>
-                </div>
-                <p>हालको कोड: <span id="currentSystemCode" style="font-weight:bold; color:red;">---</span></p>
-            </div>
-            <div class="card"><table><thead><tr><th>User</th><th>Code</th><th>Time</th></tr></thead><tbody id="luckyDrawListBody"></tbody></table></div>
-        </div>
-
-        <div id="section-settings" class="hidden">
-            <h1>Settings</h1>
-            <div class="card">
-                <label>Notice Content:</label>
-                <textarea id="noticeText" rows="6" placeholder="सूचना यहाँ लेख्नुहोस्..."></textarea>
-                <button class="action-btn approve" style="width:100%;" id="btnSaveSettings">Update Notice</button>
-            </div>
-        </div>
+        <div id="section-users" class="hidden"><h1>Manage Users</h1><div class="card"><input type="text" id="userSearchInput" placeholder="खोज्नुहोस्..." onkeyup="searchUser()"><table><thead><tr><th>UID</th><th>Name</th><th>Balance</th><th>Action</th></tr></thead><tbody id="userListBody"></tbody></table></div></div>
+        <div id="section-luckydraw" class="hidden"><h1>Lucky Draw</h1><div class="card" style="background:#fffbe6; border: 1px solid #f1c40f;"><h3>Set Lucky Code</h3><div style="display:flex; gap:10px; align-items: flex-end;"><div style="flex:1;"><input type="text" id="luckyCodeInput" placeholder="५ अंकको कोड" maxlength="5"></div><button class="action-btn approve" style="height: 45px; margin-bottom: 15px;" id="btnUpdateLucky">Update</button></div><p>हालको कोड: <span id="currentSystemCode" style="font-weight:bold; color:red;">---</span></p></div><div class="card"><table><thead><tr><th>User</th><th>Code</th><th>Time</th></tr></thead><tbody id="luckyDrawListBody"></tbody></table></div></div>
+        <div id="section-settings" class="hidden"><h1>Settings</h1><div class="card"><label>Notice Content:</label><textarea id="noticeText" rows="6" placeholder="सूचना यहाँ लेख्नुहोस्..."></textarea><button class="action-btn approve" style="width:100%;" id="btnSaveSettings">Update Notice</button></div></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, doc, onSnapshot, updateDoc, deleteDoc, setDoc, query, where, increment, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, onSnapshot, updateDoc, deleteDoc, setDoc, query, where, increment, runTransaction } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -152,12 +126,8 @@
             document.querySelectorAll('.main-content > div').forEach(d => d.classList.add('hidden'));
             document.getElementById('section-' + id).classList.remove('hidden');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            
-            // Highlight current sidebar link
             const links = document.querySelectorAll('.nav-link');
-            links.forEach(link => {
-                if(link.getAttribute('onclick').includes(id)) link.classList.add('active');
-            });
+            links.forEach(link => { if(link.getAttribute('onclick').includes(id)) link.classList.add('active'); });
             if(window.innerWidth <= 768) toggleSidebar();
         };
 
@@ -172,17 +142,48 @@
         });
 
         function loadData() {
-            // Load Notice
-            onSnapshot(doc(db, "settings", "admin_notice"), (snap) => {
-                if(snap.exists()) document.getElementById('noticeText').value = snap.data().text || "";
+            // Load Pending Deposits
+            onSnapshot(query(collection(db, 'deposits'), where('status', '==', 'pending')), (snap) => {
+                const list = document.getElementById('depositListBody');
+                document.getElementById('stat-pendingDeposit').innerText = snap.size;
+                list.innerHTML = "";
+                snap.forEach(d => {
+                    const data = d.data();
+                    const proofImg = data.proof || data.screenshot || "";
+                    list.innerHTML += `<tr>
+                        <td>${data.uid.slice(-6)}</td>
+                        <td>रू ${data.amount}</td>
+                        <td><img src="${proofImg}" class="ss-thumb" onclick="window.zoomImg('${proofImg}')" onerror="this.src='https://via.placeholder.com/50?text=No+Img'"></td>
+                        <td>
+                            <button class="action-btn approve" onclick="handleDeposit('${d.id}', '${data.uid}', ${data.amount}, 'approve')">Approve</button>
+                            <button class="action-btn reject" onclick="handleDeposit('${d.id}', '${data.uid}', ${data.amount}, 'reject')">Reject</button>
+                        </td>
+                    </tr>`;
+                });
             });
 
-            // Load Lucky Code
-            onSnapshot(doc(db, "settings", "lucky_draw"), (snap) => {
-                if(snap.exists()) document.getElementById('currentSystemCode').innerText = snap.data().code || "---";
+            // Load Pending Withdraws (Updated collection name and field names)
+            onSnapshot(query(collection(db, 'withdraw_requests'), where('status', '==', 'pending')), (snap) => {
+                const list = document.getElementById('withdrawListBody');
+                list.innerHTML = "";
+                snap.forEach(w => {
+                    const data = w.data();
+                    list.innerHTML += `<tr>
+                        <td>${data.uid ? data.uid.slice(-6) : 'N/A'}</td>
+                        <td>रू ${data.amount}</td>
+                        <td>${data.method || ''} / ${data.accountID || data.number || ''}</td>
+                        <td>
+                            <button class="action-btn approve" onclick="handleWithdraw('${w.id}', 'approve')">Done</button>
+                            <button class="action-btn reject" onclick="handleWithdraw('${w.id}', 'reject')">Reject</button>
+                        </td>
+                    </tr>`;
+                });
             });
 
-            // Load Users
+            // Standard Data Loaders
+            onSnapshot(doc(db, "settings", "admin_notice"), (snap) => { if(snap.exists()) document.getElementById('noticeText').value = snap.data().text || ""; });
+            onSnapshot(doc(db, "settings", "lucky_draw"), (snap) => { if(snap.exists()) document.getElementById('currentSystemCode').innerText = snap.data().code || "---"; });
+            
             onSnapshot(collection(db, 'users'), (snap) => {
                 const list = document.getElementById('userListBody');
                 list.innerHTML = ""; document.getElementById('stat-totalUsers').innerText = snap.size;
@@ -192,7 +193,6 @@
                 });
             });
 
-            // Disputed Matches
             onSnapshot(query(collection(db, 'matches'), where('status', '==', 'disputed')), (snap) => {
                 document.getElementById('stat-disputeCount').innerText = snap.size;
                 const list = document.getElementById('disputeList');
@@ -210,11 +210,7 @@
                 });
             });
 
-            // Match Box & Deposits Count
             onSnapshot(collection(db, 'matches'), snap => document.getElementById('stat-matchCount').innerText = snap.size);
-            onSnapshot(query(collection(db, 'deposits'), where('status', '==', 'pending')), snap => document.getElementById('stat-pendingDeposit').innerText = snap.size);
-            
-            // Match Box List
             onSnapshot(collection(db, 'matches'), (snap) => {
                 const list = document.getElementById('matchBoxList');
                 list.innerHTML = "";
@@ -225,27 +221,27 @@
             });
         }
 
-        // --- Event Listeners ---
-        document.getElementById('btnSaveSettings').onclick = async () => {
+        // --- Action Handlers ---
+        window.handleDeposit = async (id, uid, amt, type) => {
+            if(!confirm(type.toUpperCase() + " गर्ने?")) return;
             try {
-                await setDoc(doc(db, "settings", "admin_notice"), { text: document.getElementById('noticeText').value }, { merge: true });
-                Swal.fire("सफलता", "सूचना अपडेट भयो!", "success");
+                if(type === 'approve') {
+                    await runTransaction(db, async (t) => {
+                        t.update(doc(db, "users", uid), { balance: increment(amt) });
+                        t.update(doc(db, "deposits", id), { status: "approved" });
+                    });
+                    Swal.fire("Success", "Amount added to user balance", "success");
+                } else {
+                    await updateDoc(doc(db, "deposits", id), { status: "rejected" });
+                    Swal.fire("Rejected", "Deposit Rejected", "info");
+                }
             } catch(e) { Swal.fire("Error", e.message, "error"); }
         };
 
-        document.getElementById('btnUpdateLucky').onclick = async () => {
-            const code = document.getElementById('luckyCodeInput').value;
-            if(!code) return;
-            try {
-                await setDoc(doc(db, "settings", "lucky_draw"), { code: code }, { merge: true });
-                Swal.fire("सफलता", "कोड अपडेट भयो!", "success");
-            } catch(e) { Swal.fire("Error", e.message, "error"); }
-        };
-
-        window.searchUser = () => {
-            const input = document.getElementById("userSearchInput").value.toLowerCase();
-            const rows = document.getElementById("userListBody").getElementsByTagName("tr");
-            for (let row of rows) row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
+        window.handleWithdraw = async (id, type) => {
+            const status = type === 'approve' ? 'completed' : 'rejected';
+            await updateDoc(doc(db, "withdraw_requests", id), { status: status });
+            Swal.fire("Success", "Withdraw " + status, "success");
         };
 
         window.resolveMatch = async (id, uid, amt) => {
@@ -254,13 +250,26 @@
                 t.update(doc(db, "matches", id), { status: "result", finalWinner: uid });
                 t.update(doc(db, "users", uid), { balance: increment(amt) });
             });
-            Swal.fire("Success", "Done", "success");
+            Swal.fire("Success", "Result Published", "success");
         };
 
         window.zoomImg = (url) => Swal.fire({ imageUrl: url, width: '90%' });
         window.editBalance = (uid, old) => {
             const val = prompt("नयाँ ब्यालेन्स:", old);
             if(val) updateDoc(doc(db, 'users', uid), { balance: parseFloat(val) });
+        };
+        document.getElementById('btnSaveSettings').onclick = async () => {
+            await setDoc(doc(db, "settings", "admin_notice"), { text: document.getElementById('noticeText').value }, { merge: true });
+            Swal.fire("Success", "Updated", "success");
+        };
+        document.getElementById('btnUpdateLucky').onclick = async () => {
+            const code = document.getElementById('luckyCodeInput').value;
+            if(code) { await setDoc(doc(db, "settings", "lucky_draw"), { code: code }, { merge: true }); Swal.fire("Success", "Code Set", "success"); }
+        };
+        window.searchUser = () => {
+            const input = document.getElementById("userSearchInput").value.toLowerCase();
+            const rows = document.getElementById("userListBody").getElementsByTagName("tr");
+            for (let row of rows) row.style.display = row.innerText.toLowerCase().includes(input) ? "" : "none";
         };
         window.deleteMatch = (id) => confirm("Delete?") && deleteDoc(doc(db, 'matches', id));
     </script>

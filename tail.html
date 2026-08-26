@@ -11,19 +11,49 @@
             color: #fff;
             text-align: center;
             margin: 0;
-            padding: 10px;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
         }
 
         .game-container {
             width: 95%;
             max-width: 380px;
             background: #1e222d;
-            margin: 20px auto;
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
             border: 2px solid #2a303c;
             text-align: center;
+            position: relative;
+        }
+
+        /* Close Button Styling */
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #2a303c;
+            color: #fff;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+            z-index: 20;
+        }
+        .close-btn:hover {
+            background: #d32f2f;
+            color: #fff;
         }
 
         .game-container h2 {
@@ -158,6 +188,9 @@
 <body>
 
     <div class="game-container">
+        <!-- Close Button जसले ड्यासबोर्डमा फर्काउँछ -->
+        <button class="close-btn" onclick="location.href='dashboard.html'" title="Close">✕</button>
+
         <h2>Normal Spin</h2>
         
         <div class="wallet-section">
@@ -292,7 +325,6 @@
                     }
                 });
             } else {
-                // यदि लगइन छैन भने मुख्य लगइन पेजमा पठाउने
                 window.location.replace("index.html");
             }
         });
@@ -319,7 +351,6 @@
             document.getElementById('spin-btn').disabled = true;
             betInput.disabled = true;
 
-            // ब्यालेन्सबाट बेट रकम घटाएर Firebase मा अपडेट गर्ने
             userCoins -= bet;
             await updateFirebaseBalance(userCoins);
             updateCoinsUI();
@@ -384,7 +415,6 @@
                         document.getElementById('win-text').innerText = `😞 हार्नुभयो! चक्कामा ${prizeValue} पर्यो।`;
                     }
 
-                    // जित वा हार पछि अन्तिम ब्यालेन्स Firebase मा सेभ गर्ने
                     updateFirebaseBalance(userCoins);
                     updateCoinsUI();
                 }

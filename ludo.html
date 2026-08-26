@@ -12,15 +12,44 @@
             text-align: center;
             margin: 0;
             padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
         }
         .game-container {
+            width: 100%;
             max-width: 420px;
-            margin: auto;
             background: #1e1e1e;
             padding: 25px;
             border-radius: 15px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.8);
             border: 2px solid #333;
+            position: relative;
+        }
+        /* Close Button Styling */
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #333;
+            color: #fff;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+        .close-btn:hover {
+            background: #d32f2f;
+            color: #fff;
         }
         .dice {
             width: 120px;
@@ -142,6 +171,9 @@
 <body>
 
     <div class="game-container">
+        <!-- Close Button -->
+        <button class="close-btn" onclick="location.href='dashboard.html'" title="Close">✕</button>
+
         <h2>Ludo Dice Game</h2>
         <p>Total Coins: <span id="coins" style="color: gold; font-weight: bold; font-size: 18px;">0.0</span></p>
         
@@ -216,7 +248,6 @@
             document.getElementById('result').innerText = `तपाईंले ${num} छान्नुभयो। अब Roll Dice थिच्नुहोस्!`;
         };
 
-        // Firebase Auth र Real-time Balance Sync
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUserUid = user.uid;
@@ -264,7 +295,6 @@
                 document.getElementById(`btn-${i}`).disabled = true;
             }
 
-            // ब्यालेन्सबाट बेट रकम घटाएर Firebase मा अपडेट गर्ने
             userCoins -= bet;
             await updateFirebaseBalance(userCoins);
             updateCoinsUI();
@@ -306,7 +336,6 @@
                     resultText.innerText = `😞 हार्नुभयो! डाइसमा ${diceResult} आयो (तपाईंले ${selectedNum} छान्नुभएको थियो)।`;
                 }
 
-                // जित वा हार पछि अन्तिम ब्यालेन्स Firebase मा सेभ गर्ने
                 await updateFirebaseBalance(userCoins);
                 updateCoinsUI();
 

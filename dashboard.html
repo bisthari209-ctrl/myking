@@ -77,17 +77,12 @@
         
         .play-btn { background: linear-gradient(to right, #22c55e, #16a34a); color: white; border: none; padding: 8px; border-radius: 10px; margin: 0 10px 12px 10px; cursor: pointer; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; }
         .demo-btn { background: linear-gradient(to right, #6366f1, #4f46e5); }
+        .real-spin-btn { background: linear-gradient(to right, #f59e0b, #d97706); }
 
         /* Modals */
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: var(--card-bg); width: 85%; max-width: 320px; padding: 20px; border-radius: 22px; text-align: center; border: 1px solid var(--border-gold); }
         input { width: 100%; padding: 12px; margin-bottom: 12px; background: #0f172a; border: 1px solid var(--border-gold); border-radius: 10px; color: white; box-sizing: border-box; }
-
-        /* Spin */
-        .wheel-outer { position: relative; width: 160px; height: 160px; margin: 15px auto; border: 4px solid var(--gold); border-radius: 50%; }
-        .wheel-container { width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: hidden; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
-        .wheel-img { width: 100%; height: 100%; position: absolute; background: conic-gradient(#ef4444 0deg 60deg, #fbbf24 60deg 120deg, #22c55e 120deg 180deg, #3b82f6 180deg 240deg, #8b5cf6 240deg 300deg, #f97316 300deg 360deg); z-index: 1; }
-        .number-slot { position: absolute; width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-start; padding-top: 8px; color: white; font-weight: 900; font-size: 0.9rem; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); z-index: 2; box-sizing: border-box; }
 
         /* Bottom Nav - Improved Sizes */
         .bottom-nav { 
@@ -105,14 +100,8 @@
             flex: 1; transition: 0.3s;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .nav-item i { 
-            font-size: 1.4rem; /* Icon size increased */
-            margin-bottom: 5px; 
-        }
-        .nav-item span {
-            font-size: 0.75rem; /* Text size increased */
-            letter-spacing: 0.5px;
-        }
+        .nav-item i { font-size: 1.4rem; margin-bottom: 5px; }
+        .nav-item span { font-size: 0.75rem; letter-spacing: 0.5px; }
         .nav-item.active { color: var(--gold); transform: translateY(-3px); }
         .nav-item:active { transform: scale(0.9); opacity: 0.7; }
     </style>
@@ -125,21 +114,11 @@
     <div class="side-drawer" id="sideDrawer">
         <h2 style="color: var(--gold); font-size: 0.9rem; text-align:center; margin-bottom: 20px;"><i class="fas fa-bars"></i> MENU</h2>
         <a href="https://wa.me/9779767301333" class="support-link"><i class="fab fa-whatsapp" style="color:#25D366;"></i> Admin</a>
-      <a href="https://t.me/watchads11" class="support-link">
-    <i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Channel
-</a>
-      <a href="https://t.me/ludogroup_11" class="support-link">
-    <i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Ludo G
-       </a>
-        <a href="https://t.me/pubg9748" class="support-link">
-    <i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Pubg G
-</a>
-        <a href="https://t.me/freefire9748" class="support-link">
-    <i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Free Fire G
-</a>
-
+        <a href="https://t.me/watchads11" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Channel</a>
+        <a href="https://t.me/ludogroup_11" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Ludo G</a>
+        <a href="https://t.me/pubg9748" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Pubg G</a>
+        <a href="https://t.me/freefire9748" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Free Fire G</a>
         <a href="profile.html" class="support-link"><i class="fas fa-user-circle" style="color:var(--gold);"></i> Pro</a>
-        
         <button onclick="closeDrawer()" class="play-btn" style="background:#fbbf24; color: #450a0a; width: 100%; margin-top: auto; padding: 8px; font-size: 0.65rem;">बन्द</button>
     </div>
 
@@ -149,12 +128,19 @@
     </header>
 
     <main class="game-grid">
+        <!-- 1. Ludo King -->
         <div class="game-card"><img src="https://i.ibb.co/GvfdCh8y/images.jpg"><h3>Ludo King</h3><button class="play-btn" onclick="openMatchModal('Ludo King')">JOIN</button></div>
+        <!-- 2. PUBG -->
         <div class="game-card"><img src="https://i.ibb.co/chgx7WP7/download.jpg"><h3>PUBG</h3><button class="play-btn" onclick="openMatchModal('PUBG')">JOIN</button></div>
+        <!-- 3. Free Fire -->
         <div class="game-card"><img src="https://i.ibb.co/HT41RmqB/images-3.jpg"><h3>Free Fire</h3><button class="play-btn" onclick="openMatchModal('Free Fire')">JOIN</button></div>
+        <!-- 4. Carrom -->
         <div class="game-card"><img src="https://i.ibb.co/YBnVSZV1/download-1.jpg"><h3>Carrom</h3><button class="play-btn" onclick="openMatchModal('Carrom')">JOIN</button></div>
-        <div class="game-card"><img src="https://i.ibb.co/397kdSqt/1775469473110.png"><h3>Normal</h3><button class="play-btn demo-btn" onclick="openSpinModal('normal')">DEMO</button></div>
-        <div class="game-card"><img src="https://i.ibb.co/cchmBptQ/1775469646433.png"><h3>Big Spin</h3><button class="play-btn demo-btn" onclick="openSpinModal('big')">DEMO</button></div>
+        
+        <!-- Spin Wheel लाई spin.html मा डाइरेक्ट खुल्ने बनाइएको छ -->
+        <div class="game-card"><img src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300"><h3>Spin Wheel</h3><button class="play-btn real-spin-btn" onclick="location.href='spin.html'">PLAY</button></div>
+        <div class="game-card"><img src="https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=300"><h3>Coin Toss</h3><button class="play-btn demo-btn" onclick="location.href='tail.html'">PLAY</button></div>
+        <div class="game-card"><img src="https://i.ibb.co/GvfdCh8y/images.jpg"><h3>Ludo Game</h3><button class="play-btn" onclick="location.href='ludo.html'">PLAY</button></div>
     </main>
 
     <div id="matchModal" class="modal">
@@ -165,27 +151,6 @@
             <input type="text" id="roomCode" placeholder="Room Code">
             <button id="createMatchBtn" class="play-btn" style="width: 100%; margin: 5px 0;">CREATE</button>
             <button onclick="toggleModal('matchModal')" class="play-btn" style="background:#475569; width: 100%; margin: 5px 0;">CANCEL</button>
-        </div>
-    </div>
-
-    <div id="spinModal" class="modal">
-        <div class="modal-content">
-            <h3 id="spinDisplayTitle" style="color:var(--gold); font-size: 1rem;">Lucky Spin</h3>
-            <div class="wheel-outer">
-                <div style="position: absolute; top: -12px; left: 50%; transform: translateX(-50%); border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 15px solid var(--gold); z-index: 10;"></div>
-                <div class="wheel-container" id="wheelWrapper">
-                    <div class="wheel-img"></div>
-                    <div id="slot1" class="number-slot" style="transform: rotate(30deg);">?</div>
-                    <div id="slot2" class="number-slot" style="transform: rotate(90deg);">?</div>
-                    <div id="slot3" class="number-slot" style="transform: rotate(150deg);">?</div>
-                    <div id="slot4" class="number-slot" style="transform: rotate(210deg);">?</div>
-                    <div id="slot5" class="number-slot" style="transform: rotate(270deg);">?</div>
-                    <div id="slot6" class="number-slot" style="transform: rotate(330deg);">?</div>
-                </div>
-            </div>
-            <div id="spinResultText" style="margin: 8px; font-size: 1rem; font-weight: 800; color: var(--success); height: 20px;"></div>
-            <button id="spinStartBtn" class="play-btn demo-btn" style="width: 100%; margin: 5px 0;">SPIN NOW</button>
-            <button onclick="toggleModal('spinModal')" class="play-btn" style="background:#475569; width: 100%; margin: 5px 0;">CLOSE</button>
         </div>
     </div>
 
@@ -284,31 +249,11 @@
     </script>
 
     <script>
-        let spinning = false;
         window.openDrawer = () => { document.getElementById('sideDrawer').classList.add('open'); document.getElementById('overlay').style.display = 'block'; };
         window.closeDrawer = () => { document.getElementById('sideDrawer').classList.remove('open'); document.getElementById('overlay').style.display = 'none'; };
         window.showToast = (msg) => { const t = document.getElementById("toast"); t.innerText = msg; t.classList.add("show"); setTimeout(() => t.classList.remove("show"), 2500); };
-        window.toggleModal = (id) => { if(!spinning) { const m = document.getElementById(id); m.style.display = (m.style.display === 'flex') ? 'none' : 'flex'; } };
+        window.toggleModal = (id) => { const m = document.getElementById(id); m.style.display = (m.style.display === 'flex') ? 'none' : 'flex'; };
         window.openMatchModal = (game) => { document.getElementById('matchTitle').innerText = "Create " + game; toggleModal('matchModal'); };
-        
-        window.openSpinModal = (type) => {
-            const prizes = (type === 'normal') ? [5, 10, 3, 0, 2, 7] : [10, 5, 7, 14, 20, 6];
-            document.getElementById('spinDisplayTitle').innerText = (type === 'normal') ? "Normal Spin" : "Big Spin";
-            prizes.forEach((val, i) => document.getElementById(`slot${i+1}`).innerText = val);
-            document.getElementById('spinStartBtn').onclick = () => {
-                if(spinning) return; spinning = true;
-                document.getElementById('spinResultText').innerText = "घुम्दैछ...";
-                let stopAt = Math.floor(Math.random() * 6);
-                const wheel = document.getElementById('wheelWrapper');
-                wheel.style.transform = `rotate(${(360 * 5) - (stopAt * 60 + 30)}deg)`;
-                setTimeout(() => {
-                    document.getElementById('spinResultText').innerText = "जित: रू " + prizes[stopAt];
-                    showToast("डेमो मात्र हो!");
-                    spinning = false;
-                }, 4000);
-            };
-            toggleModal('spinModal');
-        };
     </script>
 </body>
 </html>

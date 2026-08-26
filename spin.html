@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coin Toss Game with Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #141414;
+            color: #fff;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-container {
+            max-width: 450px;
+            margin: auto;
+            background: #1f1f1f;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.8);
+            border: 2px solid #333;
+        }
+        .coin {
+            width: 200px;
+            height: 200px;
+            margin: 25px auto;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffdf73 0%, #d4af37 60%, #aa7c11 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            color: #3b2701;
+            font-weight: bold;
+            border: 8px solid #fff;
+            box-shadow: 0 0 35px rgba(212, 175, 55, 0.9), inset 0 0 20px rgba(0,0,0,0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        @keyframes spin {
+            0% { transform: rotateY(0deg) scale(1); }
+            50% { transform: rotateY(90deg) scale(1.1); background: #b8860b; color: transparent; }
+            100% { transform: rotateY(180deg) scale(1); }
+        }
+        .spinning {
+            animation: spin 0.25s infinite linear;
+        }
+        .bet-section {
+            margin: 15px 0;
+            background: #2a2a2a;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .bet-section label {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .bet-section input {
+            width: 90px;
+            padding: 8px;
+            font-size: 18px;
+            text-align: center;
+            font-weight: bold;
+            background: #111;
+            color: #fff;
+            border: 2px solid #555;
+            border-radius: 5px;
+            margin-left: 10px;
+        }
+        .quick-bet-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .quick-btn {
+            background-color: #333;
+            color: #ffcc00;
+            border: 1px solid #555;
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .quick-btn:hover {
+            background-color: #ffcc00;
+            color: #111;
+        }
+        .choices {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+        }
+        .choice-btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 3px solid transparent;
+            border-radius: 8px;
+            color: #fff;
+            transition: 0.2s;
+        }
+        #head-btn { background-color: #8B4513; }
+        #tail-btn { background-color: #DAA520; color: #111; }
+        .choice-btn.selected {
+            border-color: #00ffcc;
+            transform: scale(1.05);
+            box-shadow: 0 0 12px #00ffcc;
+        }
+        .toss-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.4);
+        }
+        .toss-btn:hover { background-color: #218838; }
+        .toss-btn:active { transform: scale(0.98); }
+        .toss-btn:disabled { background-color: #555; cursor: not-allowed; box-shadow: none; }
+        #result {
+            font-size: 17px;
+            margin: 15px 0;
+            font-weight: bold;
+            min-height: 25px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h2>Coin Toss Game</h2>
+        <p>Total Coins: <span id="coins" style="color: gold; font-weight: bold; font-size: 18px;">0.0</span></p>
+        
+        <div class="coin" id="coin-display">TOSS</div>
+
+        <div class="bet-section">
+            <label for="bet-amount">Bet Amount:</label>
+            <input type="number" id="bet-amount" value="10" min="1" max="1000">
+            
+            <div class="quick-bet-buttons">
+                <button class="quick-btn" onclick="addBet(5)">+5</button>
+                <button class="quick-btn" onclick="addBet(10)">+10</button>
+                <button class="quick-btn" onclick="addBet(50)">+50</button>
+                <button class="quick-btn" onclick="addBet(100)">+100</button>
+                <button class="quick-btn" onclick="clearBet()" style="color: #ff4444;">Clear</button>
+            </div>
+        </div>
+
+        <p>Head वा Tail छान्नुहोस्:</p>
+        <div class="choices">
+            <button class="choice-btn" id="head-btn" onclick="selectChoice('HEAD')">HEAD</button>
+            <button class="choice-btn" id="tail-btn" onclick="selectChoice('TAIL')">TAIL</button>
+        </div>
+
+        <button class="toss-btn" id="toss-btn" onclick="startToss()" disabled>TOSS COIN</button>
+
+        <div id="result">डेटा लोड हुँदैछ...</div>
+    </div>
+
+    <!-- Firebase SDK Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
+            authDomain: "harishbist-3a263.firebaseapp.com",
+            projectId: "harishbist-3a263",
+            storageBucket: "harishbist-3a263.firebasestorage.app",
+            messagingSenderId: "816353842957",
+            appId: "1:816353842957:web:5b853c5bed6450fc544244"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userCoins = 0.0;
+        let selectedChoice = "";
+        let isPlaying = false;
+        let playCount = 0;
+        let currentUserUid = null;
+
+        window.addBet = function(amount) {
+            if (isPlaying) return;
+            let betInput = document.getElementById('bet-amount');
+            let currentBet = parseInt(betInput.value) || 0;
+            betInput.value = currentBet + amount;
+        };
+
+        window.clearBet = function() {
+            if (isPlaying) return;
+            document.getElementById('bet-amount').value = 0;
+        };
+
+        window.selectChoice = function(choice) {
+            if (isPlaying) return;
+            selectedChoice = choice;
+            document.getElementById('head-btn').classList.remove('selected');
+            document.getElementById('tail-btn').classList.remove('selected');
+
+            if (choice === 'HEAD') {
+                document.getElementById('head-btn').classList.add('selected');
+            } else {
+                document.getElementById('tail-btn').classList.add('selected');
+            }
+
+            document.getElementById('result').style.color = "#fff";
+            document.getElementById('result').innerText = `तपाईले ${choice} छान्नुभयो। अब Toss Coin थिच्नुहोस्!`;
+        };
+
+        // Firebase Auth र Real-time Balance Sync
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserUid = user.uid;
+                const userRef = doc(db, "users", currentUserUid);
+                
+                onSnapshot(userRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        let data = docSnap.data();
+                        userCoins = Number(data.balance) || 0;
+                        updateCoinsUI();
+                        document.getElementById('toss-btn').disabled = false;
+                        document.getElementById('result').innerText = "पहिले Bet रकम राखेर Head/Tail छान्नुहोस्!";
+                    } else {
+                        document.getElementById('result').innerText = "युजर डेटा फेला परेन!";
+                    }
+                });
+            } else {
+                window.location.replace("index.html");
+            }
+        });
+
+        window.startToss = async function() {
+            if (selectedChoice === "") {
+                document.getElementById('result').style.color = "#ff4444";
+                document.getElementById('result').innerText = "कृपया पहिले Head वा Tail छान्नुहोस्!";
+                return;
+            }
+
+            let betInput = document.getElementById('bet-amount');
+            let bet = parseFloat(betInput.value);
+
+            if (isNaN(bet) || bet <= 0) {
+                document.getElementById('result').style.color = "#ff4444";
+                document.getElementById('result').innerText = "कृपया सही बेट रकम (Bet Amount) राख्नुहोस्!";
+                return;
+            }
+
+            if (userCoins < bet) {
+                document.getElementById('result').style.color = "#ff4444";
+                document.getElementById('result').innerText = "❌ तपाईसँग पर्याप्त कोइन छैन!";
+                return;
+            }
+
+            isPlaying = true;
+            document.getElementById('toss-btn').disabled = true;
+            betInput.disabled = true;
+
+            // ब्यालेन्सबाट बेट रकम घटाएर Firebase मा अपडेट गर्ने
+            userCoins -= bet;
+            await updateFirebaseBalance(userCoins);
+            updateCoinsUI();
+
+            let coinDisplay = document.getElementById('coin-display');
+            let resultText = document.getElementById('result');
+
+            coinDisplay.classList.add('spinning');
+            coinDisplay.innerText = "...";
+            resultText.style.color = "#ffaa00";
+            resultText.innerText = "सिक्का हावामा घुमिरहेको छ...";
+
+            setTimeout(async () => {
+                coinDisplay.classList.remove('spinning');
+
+                let tossResult;
+                let currentStep = playCount % 20;
+                let winningSteps = [2, 5, 8, 11, 14, 16, 19]; 
+
+                if (winningSteps.includes(currentStep)) {
+                    tossResult = selectedChoice; 
+                } else {
+                    tossResult = (selectedChoice === 'HEAD') ? 'TAIL' : 'HEAD'; 
+                }
+
+                playCount++;
+                coinDisplay.innerText = tossResult;
+
+                if (selectedChoice === tossResult) {
+                    let winnings = bet * 1.85; 
+                    userCoins += winnings;
+                    resultText.style.color = '#28a745';
+                    resultText.innerText = `🎉 बधाई छ! जित्नुभयो (+${winnings.toFixed(1)} Coins), सिक्कामा ${tossResult} आयो!`;
+                } else {
+                    resultText.style.color = '#dc3545';
+                    resultText.innerText = `😞 हार्नुभयो (-${bet} Coins), सिक्कामा ${tossResult} आयो।`;
+                }
+
+                // जित वा हार पछि अन्तिम ब्यालेन्स Firebase मा सेभ गर्ने
+                await updateFirebaseBalance(userCoins);
+                updateCoinsUI();
+
+                isPlaying = false;
+                document.getElementById('toss-btn').disabled = false;
+                betInput.disabled = false;
+
+            }, 2000);
+        };
+
+        async function updateFirebaseBalance(newBalance) {
+            try {
+                const userRef = doc(db, "users", currentUserUid);
+                await updateDoc(userRef, { balance: newBalance });
+            } catch (error) {
+                console.error("ब्यालेन्स अपडेट गर्न समस्या भयो: ", error);
+            }
+        }
+
+        function updateCoinsUI() {
+            document.getElementById('coins').innerText = userCoins.toFixed(1);
+        }
+    </script>
+
+</body>
+</html>

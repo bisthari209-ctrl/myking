@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ludo Dice Game with Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .game-container {
+            max-width: 420px;
+            margin: auto;
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.8);
+            border: 2px solid #333;
+        }
+        .dice {
+            width: 120px;
+            height: 120px;
+            margin: 20px auto;
+            background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 55px;
+            color: #d32f2f;
+            font-weight: bold;
+            border-radius: 20px;
+            border: 4px solid #b71c1c;
+            box-shadow: 0 0 25px rgba(211, 47, 47, 0.6);
+        }
+        @keyframes roll {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(90deg) scale(1.1); background: #ffc107; color: #000; }
+            50% { transform: rotate(180deg) scale(0.9); background: #4caf50; color: #fff; }
+            75% { transform: rotate(270deg) scale(1.1); background: #2196f3; color: #fff; }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        .rolling {
+            animation: roll 0.3s infinite linear;
+        }
+        .number-selector {
+            margin: 15px 0;
+        }
+        .number-selector p {
+            font-size: 15px;
+            font-weight: bold;
+            color: #00ffcc;
+            margin-bottom: 8px;
+        }
+        .num-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+        }
+        .num-btn {
+            width: 45px;
+            height: 45px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #2a2a2a;
+            color: #fff;
+            border: 2px solid #555;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.1;
+        }
+        .num-btn span {
+            font-size: 8px;
+            color: #ffcc00;
+        }
+        .num-btn:hover {
+            background-color: #444;
+        }
+        .num-btn.selected {
+            background-color: #d32f2f;
+            border-color: #ffcc00;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(211, 47, 47, 0.8);
+            transform: scale(1.05);
+        }
+        .bet-section {
+            margin: 15px 0;
+            background: #2a2a2a;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .bet-section label {
+            font-size: 15px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .bet-section input {
+            width: 80px;
+            padding: 8px;
+            font-size: 16px;
+            text-align: center;
+            font-weight: bold;
+            background: #111;
+            color: #fff;
+            border: 2px solid #555;
+            border-radius: 5px;
+            margin-left: 10px;
+        }
+        .roll-btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 4px 10px rgba(211, 47, 47, 0.4);
+        }
+        .roll-btn:hover { background-color: #b71c1c; }
+        .roll-btn:active { transform: scale(0.98); }
+        .roll-btn:disabled { background-color: #555; cursor: not-allowed; box-shadow: none; }
+        #result {
+            font-size: 17px;
+            margin: 15px 0;
+            font-weight: bold;
+            min-height: 25px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h2>Ludo Dice Game</h2>
+        <p>Total Coins: <span id="coins" style="color: gold; font-weight: bold; font-size: 18px;">0.0</span></p>
+        
+        <div class="number-selector">
+            <p>Select Number (Win Payout for 5 Bet):</p>
+            <div class="num-buttons">
+                <button class="num-btn" onclick="selectNumber(1)" id="btn-1">1<span>Win: 8</span></button>
+                <button class="num-btn" onclick="selectNumber(2)" id="btn-2">2<span>Win: 12</span></button>
+                <button class="num-btn" onclick="selectNumber(3)" id="btn-3">3<span>Win: 15</span></button>
+                <button class="num-btn" onclick="selectNumber(4)" id="btn-4">4<span>Win: 18</span></button>
+                <button class="num-btn" onclick="selectNumber(5)" id="btn-5">5<span>Win: 22</span></button>
+                <button class="num-btn selected" onclick="selectNumber(6)" id="btn-6">6<span>Win: 25</span></button>
+            </div>
+        </div>
+
+        <div class="dice" id="dice-display">🎲</div>
+
+        <div class="bet-section">
+            <label for="bet-amount">Bet Amount:</label>
+            <input type="number" id="bet-amount" value="5" min="1" max="1000">
+        </div>
+
+        <button class="roll-btn" id="roll-btn" onclick="rollDice()" disabled>ROLL DICE</button>
+
+        <div id="result">डेटा लोड हुँदैछ...</div>
+    </div>
+
+    <!-- Firebase SDK Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
+            authDomain: "harishbist-3a263.firebaseapp.com",
+            projectId: "harishbist-3a263",
+            storageBucket: "harishbist-3a263.firebasestorage.app",
+            messagingSenderId: "816353842957",
+            appId: "1:816353842957:web:5b853c5bed6450fc544244"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userCoins = 0.0;
+        let isRolling = false;
+        let selectedNum = 6; 
+        let playCount = 0;   
+        let currentUserUid = null;
+
+        const basePayouts = {
+            1: 8,
+            2: 12,
+            3: 15,
+            4: 18,
+            5: 22,
+            6: 25
+        };
+
+        window.selectNumber = function(num) {
+            if (isRolling) return;
+            selectedNum = num;
+
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`btn-${i}`).classList.remove('selected');
+            }
+
+            document.getElementById(`btn-${num}`).classList.add('selected');
+            document.getElementById('result').style.color = "#fff";
+            document.getElementById('result').innerText = `तपाईंले ${num} छान्नुभयो। अब Roll Dice थिच्नुहोस्!`;
+        };
+
+        // Firebase Auth र Real-time Balance Sync
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserUid = user.uid;
+                const userRef = doc(db, "users", currentUserUid);
+                
+                onSnapshot(userRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        let data = docSnap.data();
+                        userCoins = Number(data.balance) || 0;
+                        updateCoinsUI();
+                        document.getElementById('roll-btn').disabled = false;
+                        document.getElementById('result').innerText = "नम्बर छानेर Roll Dice थिच्नुहोस्!";
+                    } else {
+                        document.getElementById('result').innerText = "युजर डेटा फेला परेन!";
+                    }
+                });
+            } else {
+                window.location.replace("index.html");
+            }
+        });
+
+        window.rollDice = async function() {
+            if (isRolling || !currentUserUid) return;
+
+            let betInput = document.getElementById('bet-amount');
+            let bet = parseFloat(betInput.value);
+
+            if (isNaN(bet) || bet <= 0) {
+                document.getElementById('result').style.color = "#ff4444";
+                document.getElementById('result').innerText = "कृपया सही बेट रकम राख्नुहोस्!";
+                return;
+            }
+
+            if (userCoins < bet) {
+                document.getElementById('result').style.color = "#ff4444";
+                document.getElementById('result').innerText = "❌ तपाईसँग पर्याप्त कोइन छैन!";
+                return;
+            }
+
+            isRolling = true;
+            document.getElementById('roll-btn').disabled = true;
+            betInput.disabled = true;
+
+            for (let i = 1; i <= 6; i++) {
+                document.getElementById(`btn-${i}`).disabled = true;
+            }
+
+            // ब्यालेन्सबाट बेट रकम घटाएर Firebase मा अपडेट गर्ने
+            userCoins -= bet;
+            await updateFirebaseBalance(userCoins);
+            updateCoinsUI();
+
+            let diceDisplay = document.getElementById('dice-display');
+            let resultText = document.getElementById('result');
+
+            diceDisplay.classList.add('rolling');
+            diceDisplay.innerText = "⚄";
+            resultText.style.color = "#ffaa00";
+            resultText.innerText = "डाइस घुमिरहेको छ...";
+
+            setTimeout(async () => {
+                diceDisplay.classList.remove('rolling');
+
+                let diceResult;
+                let currentStep = playCount % 3;
+
+                if (currentStep === 0) {
+                    diceResult = selectedNum;
+                } else {
+                    do {
+                        diceResult = Math.floor(Math.random() * 6) + 1;
+                    } while (diceResult === selectedNum);
+                }
+
+                playCount++;
+                diceDisplay.innerText = diceResult;
+
+                if (selectedNum === diceResult) {
+                    let baseWin = basePayouts[selectedNum];
+                    let winnings = (bet / 5) * baseWin; 
+                    
+                    userCoins += winnings;
+                    resultText.style.color = '#4caf50';
+                    resultText.innerText = `🎉 बधाई छ! डाइसमा ${diceResult} आयो, तपाईंले जित्नुभयो (+${winnings.toFixed(1)} Coins)!`;
+                } else {
+                    resultText.style.color = '#f44336';
+                    resultText.innerText = `😞 हार्नुभयो! डाइसमा ${diceResult} आयो (तपाईंले ${selectedNum} छान्नुभएको थियो)।`;
+                }
+
+                // जित वा हार पछि अन्तिम ब्यालेन्स Firebase मा सेभ गर्ने
+                await updateFirebaseBalance(userCoins);
+                updateCoinsUI();
+
+                isRolling = false;
+                document.getElementById('roll-btn').disabled = false;
+                betInput.disabled = false;
+
+                for (let i = 1; i <= 6; i++) {
+                    document.getElementById(`btn-${i}`).disabled = false;
+                }
+
+            }, 2000);
+        };
+
+        async function updateFirebaseBalance(newBalance) {
+            try {
+                const userRef = doc(db, "users", currentUserUid);
+                await updateDoc(userRef, { balance: newBalance });
+            } catch (error) {
+                console.error("ब्यालेन्स अपडेट गर्न समस्या भयो: ", error);
+            }
+        }
+
+        function updateCoinsUI() {
+            document.getElementById('coins').innerText = userCoins.toFixed(1);
+        }
+    </script>
+
+</body>
+</html>

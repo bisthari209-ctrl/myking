@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spin Game with Bet System & Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+            text-align: center;
+            margin: 0;
+            padding: 10px;
+        }
+
+        .game-container {
+            width: 95%;
+            max-width: 380px;
+            background: #1e222d;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
+            border: 2px solid #2a303c;
+            text-align: center;
+        }
+
+        .game-container h2 {
+            color: #ffcc00;
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+
+        .wallet-section {
+            margin-bottom: 15px;
+            background: #2a303c;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 16px;
+            color: gold;
+            font-weight: bold;
+        }
+
+        .bet-section {
+            margin: 12px 0;
+            background: #2a303c;
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .bet-section label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .bet-section input {
+            width: 80px;
+            padding: 6px;
+            font-size: 15px;
+            text-align: center;
+            font-weight: bold;
+            background: #121212;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 5px;
+        }
+
+        .choice-section {
+            margin: 10px 0;
+        }
+        .choice-section p {
+            font-size: 13px;
+            color: #00ffcc;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+        .choice-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+        }
+        .choice-btn {
+            width: 45px;
+            height: 35px;
+            font-size: 14px;
+            font-weight: bold;
+            background-color: #2a303c;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .choice-btn:hover {
+            background-color: #444;
+        }
+        .choice-btn.selected {
+            background-color: #ffcc00;
+            color: #121212;
+            border-color: #fff;
+            box-shadow: 0 0 8px rgba(255, 204, 0, 0.8);
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 15px auto;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(0,0,0,0.6);
+            border: 4px solid #ffcc00;
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 16px solid #ffcc00;
+            z-index: 10;
+        }
+
+        #win-text {
+            font-size: 15px;
+            color: #fff;
+            font-weight: bold;
+            margin: 10px 0;
+            min-height: 20px;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #5c6bc0 0%, #3f51b5 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 5px;
+            box-shadow: 0 4px 10px rgba(63, 81, 181, 0.4);
+        }
+        .action-btn:disabled { background: #444; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h2>Normal Spin</h2>
+        
+        <div class="wallet-section">
+            Balance: रू <span id="coins">0.0</span>
+        </div>
+
+        <div class="bet-section">
+            <label for="bet-amount">Bet Amount:</label>
+            <input type="number" id="bet-amount" value="5" min="1" max="1000">
+        </div>
+        
+        <div class="choice-section">
+            <p>Select Your Target Number:</p>
+            <div class="choice-buttons">
+                <button class="choice-btn" onclick="selectChoice(10)" id="ch-10">10</button>
+                <button class="choice-btn" onclick="selectChoice(5)" id="ch-5">5</button>
+                <button class="choice-btn" onclick="selectChoice(3)" id="ch-3">3</button>
+                <button class="choice-btn" onclick="selectChoice(2)" id="ch-2">2</button>
+                <button class="choice-btn" onclick="selectChoice(1)" id="ch-1">1</button>
+                <button class="choice-btn selected" onclick="selectChoice(0)" id="ch-0">0</button>
+            </div>
+        </div>
+
+        <div class="wheel-container">
+            <div class="wheel-pointer"></div>
+            <canvas id="wheelCanvas" width="300" height="300"></canvas>
+        </div>
+
+        <div id="win-text">डेटा लोड हुँदैछ...</div>
+
+        <button class="action-btn" id="spin-btn" onclick="startSpin()" disabled>SPIN NOW</button>
+    </div>
+
+    <!-- Firebase SDK Modules -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyALYYgyAZ_mLWeXHvYvL9LXsDaTHCbDK_g",
+            authDomain: "harishbist-3a263.firebaseapp.com",
+            projectId: "harishbist-3a263",
+            storageBucket: "harishbist-3a263.firebasestorage.app",
+            messagingSenderId: "816353842957",
+            appId: "1:816353842957:web:5b853c5bed6450fc544244"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userCoins = 0.0;
+        let isSpinning = false;
+        let playCount = 0;   
+        let selectedChoiceValue = 0; 
+        let currentUserUid = null;
+
+        const wheelSectors = [
+            { label: "10", color: "#fbc531", value: 10 },
+            { label: "5", color: "#e84118", value: 5 },
+            { label: "1", color: "#00a8ff", value: 1 },
+            { label: "2", color: "#9c88ff", value: 2 },
+            { label: "0", color: "#2f3640", value: 0 },
+            { label: "3", color: "#4cd137", value: 3 }
+        ];
+
+        const canvas = document.getElementById("wheelCanvas");
+        const ctx = canvas.getContext("2d");
+        const numSectors = wheelSectors.length;
+        const arc = (2 * Math.PI) / numSectors;
+        let startAngle = 0;
+
+        function drawWheel() {
+            let outsideRadius = 130;
+            let textRadius = 80;
+
+            ctx.clearRect(0, 0, 300, 300);
+            ctx.save();
+            ctx.translate(150, 150);
+
+            for (let i = 0; i < numSectors; i++) {
+                let angle = startAngle + i * arc;
+                ctx.fillStyle = wheelSectors[i].color;
+                ctx.beginPath();
+                ctx.arc(0, 0, outsideRadius, angle, angle + arc, false);
+                ctx.arc(0, 0, 0, angle + arc, angle, true);
+                ctx.stroke();
+                ctx.fill();
+
+                ctx.save();
+                ctx.fillStyle = "#fff";
+                ctx.font = "bold 20px Arial";
+                let text = wheelSectors[i].label;
+                ctx.translate(Math.cos(angle + arc / 2) * textRadius, Math.sin(angle + arc / 2) * textRadius);
+                ctx.rotate(angle + arc / 2 + Math.PI / 2);
+                ctx.fillText(text, -ctx.measureText(text).width / 2, 0);
+                ctx.restore();
+            }
+            ctx.restore();
+        }
+
+        window.selectChoice = function(val) {
+            if (isSpinning) return;
+            selectedChoiceValue = val;
+
+            let vals = [10, 5, 3, 2, 1, 0];
+            vals.forEach(v => {
+                document.getElementById(`ch-${v}`).classList.remove('selected');
+            });
+
+            document.getElementById(`ch-${val}`).classList.add('selected');
+            document.getElementById('win-text').style.color = "#fff";
+            document.getElementById('win-text').innerText = `तपाईंले ${val} छान्नुभयो।`;
+        };
+
+        // Firebase Authentication र Balance Real-time Sync
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUserUid = user.uid;
+                const userRef = doc(db, "users", currentUserUid);
+                
+                onSnapshot(userRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        let data = docSnap.data();
+                        userCoins = Number(data.balance) || 0;
+                        updateCoinsUI();
+                        document.getElementById('spin-btn').disabled = false;
+                        document.getElementById('win-text').innerText = "नम्बर र बेट राखेर Spin Now थिच्नुहोस्!";
+                    } else {
+                        document.getElementById('win-text').innerText = "युजर डेटा फेला परेन!";
+                    }
+                });
+            } else {
+                // यदि लगइन छैन भने मुख्य लगइन पेजमा पठाउने
+                window.location.replace("index.html");
+            }
+        });
+
+        window.startSpin = async function() {
+            if (isSpinning || !currentUserUid) return;
+
+            let betInput = document.getElementById('bet-amount');
+            let bet = parseFloat(betInput.value);
+
+            if (isNaN(bet) || bet <= 0) {
+                document.getElementById('win-text').style.color = "#ff4444";
+                document.getElementById('win-text').innerText = "❌ कृपया सही Bet Amount राख्नुहोस्!";
+                return;
+            }
+
+            if (userCoins < bet) {
+                document.getElementById('win-text').style.color = "#ff4444";
+                document.getElementById('win-text').innerText = "❌ ब्यालेन्स अपुग छ!";
+                return;
+            }
+
+            isSpinning = true;
+            document.getElementById('spin-btn').disabled = true;
+            betInput.disabled = true;
+
+            // ब्यालेन्सबाट बेट रकम घटाएर Firebase मा अपडेट गर्ने
+            userCoins -= bet;
+            await updateFirebaseBalance(userCoins);
+            updateCoinsUI();
+
+            document.getElementById('win-text').style.color = "#ffcc00";
+            document.getElementById('win-text').innerText = "चक्का घुमिरहेको छ...";
+
+            let currentStep = playCount % 3;
+            let targetIndex;
+
+            if (currentStep === 0) {
+                targetIndex = wheelSectors.findIndex(sec => sec.value === selectedChoiceValue);
+                if (targetIndex === -1) targetIndex = 0;
+            } else {
+                let otherIndexes = [];
+                wheelSectors.forEach((sec, idx) => {
+                    if (sec.value !== selectedChoiceValue) {
+                        otherIndexes.push(idx);
+                    }
+                });
+                targetIndex = otherIndexes[Math.floor(Math.random() * otherIndexes.length)];
+            }
+            playCount++;
+
+            let sectorAngleDeg = 360 / numSectors;
+            let targetDegree = 270 - (targetIndex * sectorAngleDeg) - (sectorAngleDeg / 2);
+            let spins = 5; 
+            let totalAngle = (spins * 360) + targetDegree;
+
+            let currentRotation = 0;
+            let spinDuration = 3000; 
+            let startTime = null;
+
+            function animateSpin(timestamp) {
+                if (!startTime) startTime = timestamp;
+                let elapsed = timestamp - startTime;
+                let progress = Math.min(elapsed / spinDuration, 1);
+                
+                let easeProgress = 1 - Math.pow(1 - progress, 3);
+                currentRotation = easeProgress * totalAngle;
+
+                startAngle = (currentRotation * Math.PI) / 180;
+                drawWheel();
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateSpin);
+                } else {
+                    isSpinning = false;
+                    document.getElementById('spin-btn').disabled = false;
+                    betInput.disabled = false;
+
+                    let winningItem = wheelSectors[targetIndex];
+                    let prizeValue = winningItem.value;
+
+                    if (selectedChoiceValue === prizeValue) {
+                        let winnings = bet * (prizeValue > 0 ? prizeValue : 1);
+                        userCoins += winnings;
+                        document.getElementById('win-text').style.color = "#00ffcc";
+                        document.getElementById('win-text').innerText = `🎉 जित्नुभयो! रू ${winnings.toFixed(1)} थपियो!`;
+                    } else {
+                        document.getElementById('win-text').style.color = "#ff4444";
+                        document.getElementById('win-text').innerText = `😞 हार्नुभयो! चक्कामा ${prizeValue} पर्यो।`;
+                    }
+
+                    // जित वा हार पछि अन्तिम ब्यालेन्स Firebase मा सेभ गर्ने
+                    updateFirebaseBalance(userCoins);
+                    updateCoinsUI();
+                }
+            }
+
+            requestAnimationFrame(animateSpin);
+        };
+
+        async function updateFirebaseBalance(newBalance) {
+            try {
+                const userRef = doc(db, "users", currentUserUid);
+                await updateDoc(userRef, { balance: newBalance });
+            } catch (error) {
+                console.error("ब्यालेन्स अपडेट गर्न समस्या भयो: ", error);
+            }
+        }
+
+        function updateCoinsUI() {
+            document.getElementById('coins').innerText = userCoins.toFixed(1);
+        }
+
+        drawWheel();
+    </script>
+
+</body>
+</html>

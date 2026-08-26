@@ -65,6 +65,7 @@
     </div>
 
     <div class="main-content">
+        <!-- Dashboard Section -->
         <div id="section-dashboard">
             <h1>Dashboard Overview</h1>
             
@@ -95,7 +96,23 @@
 
         <div id="section-matchbox" class="hidden"><h1>Match Box</h1><div class="card"><table><thead><tr><th>ID</th><th>Creator</th><th>Joiner</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="matchBoxList"></tbody></table></div></div>
         
-        <div id="section-deposits" class="hidden"><h1>Deposits</h1><div class="card"><table><thead><tr><th>User</th><th>Amount</th><th>Proof</th><th>Action</th></tr></thead><tbody id="depositListBody"></tbody></table></div></div>
+        <!-- Deposits Section -->
+        <div id="section-deposits" class="hidden">
+            <h1>Deposits Requests</h1>
+            <div class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Amount</th>
+                            <th>Proof Screenshot</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="depositListBody"></tbody>
+                </table>
+            </div>
+        </div>
         
         <div id="section-withdraws" class="hidden"><h1>Withdraws</h1><div class="card"><table><thead><tr><th>User</th><th>Method</th><th>Wallet</th><th>Amount</th><th>Action</th></tr></thead><tbody id="withdrawListBody"></tbody></table></div></div>
         
@@ -132,7 +149,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, doc, onSnapshot, updateDoc, deleteDoc, setDoc, query, where, increment, runTransaction, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, onSnapshot, updateDoc, deleteDoc, setDoc, query, where, increment, runTransaction, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -153,7 +170,6 @@
             document.getElementById('section-' + id).classList.remove('hidden');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             
-            // Highlight current sidebar link
             const links = document.querySelectorAll('.nav-link');
             links.forEach(link => {
                 if(link.getAttribute('onclick').includes(id)) link.classList.add('active');
@@ -188,7 +204,15 @@
                 list.innerHTML = ""; document.getElementById('stat-totalUsers').innerText = snap.size;
                 snap.forEach(c => {
                     const u = c.data();
-                    list.innerHTML += `<tr><td>${c.id.slice(0,8)}</td><td>${u.name || 'User'}</td><td>रू ${u.balance || 0}</td><td><button class="action-btn edit-btn" onclick="editBalance('${c.id}',${u.balance})">Edit</button></td></tr>`;
+                    list.innerHTML += `<tr>
+                        <td>${c.id.slice(0,8)}</td>
+                        <td>${u.name || 'User'}</td>
+                        <td>रू ${u.balance || 0}</td>
+                        <td>
+                            <button class="action-btn edit-btn" onclick="editBalance('${c.id}',${u.balance})">Edit</button>
+                            <button class="action-btn reject" onclick="deleteUser('${c.id}')">Delete</button>
+                        </td>
+                    </tr>`;
                 });
             });
 
@@ -210,9 +234,55 @@
                 });
             });
 
+            // Load Deposits List (Unique per user logic)
+            onSnapshot(collection(db, 'deposits'), (snap) => {
+                const depositList = document.getElementById('depositListBody');
+                depositList.innerHTML = "";
+                
+                let pendingDepCount = 0;
+                let uniqueUsers = new Set(); // To track users with pending deposits
+
+                snap.forEach(docSnap => {
+                    const d = docSnap.data();
+                    const status = (d.status || '').toLowerCase();
+                    const userId = d.userId || d.uid;
+                    
+                    if(status === 'approved') return;
+
+                    // If user already has a pending deposit displayed, skip this one
+                    if(uniqueUsers.has(userId)) {
+                         // Optional: Clean up duplicate pending deposits in DB silently
+                         // deleteDoc(doc(db, "deposits", docSnap.id)); 
+                         return; 
+                    }
+
+                    uniqueUsers.add(userId);
+                    pendingDepCount++;
+                    
+                    const proofImg = d.proofUrl || d.screenshot || 'https://via.placeholder.com/50';
+
+                    depositList.innerHTML += `
+                        <tr>
+                            <td>${userId ? userId.slice(0,8) : 'N/A'}</td>
+                            <td>रू ${d.amount || 0}</td>
+                            <td><img src="${proofImg}" class="ss-thumb" onclick="window.zoomImg('${proofImg}')"></td>
+                            <td>
+                                <button class="action-btn approve" onclick="approveDeposit('${docSnap.id}', '${userId}', ${d.amount || 0})">Approve</button>
+                                <button class="action-btn reject" onclick="rejectDeposit('${docSnap.id}', '${userId}')">Reject</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                if(depositList.innerHTML === "") {
+                    depositList.innerHTML = `<tr><td colspan="4" style="text-align:center;">कुनै डिपोजिट अनुरोध छैन।</td></tr>`;
+                }
+
+                document.getElementById('stat-pendingDeposit').innerText = pendingDepCount;
+            });
+
             // Match Box & Deposits Count
             onSnapshot(collection(db, 'matches'), snap => document.getElementById('stat-matchCount').innerText = snap.size);
-            onSnapshot(query(collection(db, 'deposits'), where('status', '==', 'pending')), snap => document.getElementById('stat-pendingDeposit').innerText = snap.size);
             
             // Match Box List
             onSnapshot(collection(db, 'matches'), (snap) => {
@@ -224,6 +294,67 @@
                 });
             });
         }
+
+        // --- Deposit Actions Functions ---
+        
+        // Approve Function with Duplicate Cleanup
+        window.approveDeposit = async (depositId, userId, amount) => {
+            if(!userId) {
+                Swal.fire("Error", "User ID फेला परेन!", "error");
+                return;
+            }
+            if(!confirm(`यस युजरलाई रू ${amount} डिपोजिट एप्रुभ गर्ने?`)) return;
+            try {
+                await runTransaction(db, async (t) => {
+                    t.update(doc(db, "deposits", depositId), { status: "approved" });
+                    t.update(doc(db, "users", userId), { balance: increment(amount) });
+                });
+
+                // Delete other duplicate pending requests for this user
+                cleanupDuplicateDeposits(userId, depositId);
+
+                Swal.fire("सफलता", "डिपोजिट सफलतापूर्वक एप्रुभ भयो!", "success");
+            } catch(e) {
+                Swal.fire("Error", e.message, "error");
+            }
+        };
+
+        // Reject Function with Duplicate Cleanup
+        window.rejectDeposit = async (depositId, userId) => {
+            if(!confirm("के यो डिपोजिट अस्वीकार (Reject) गरी पूर्ण रूपमा हटाउन चाहनुहुन्छ?")) return;
+            try {
+                await deleteDoc(doc(db, "deposits", depositId));
+                
+                // Delete other duplicate pending requests for this user
+                cleanupDuplicateDeposits(userId, depositId);
+
+                Swal.fire("Success", "डिपोजिट डेटा र ID सफलतापूर्वक हटाइयो।", "success");
+            } catch(e) {
+                Swal.fire("Error", e.message, "error");
+            }
+        };
+
+        // Function to delete all other pending deposits for a user
+        async function cleanupDuplicateDeposits(userId, currentDepositId) {
+             const q = query(collection(db, "deposits"), where("userId", "==", userId));
+             const querySnapshot = await getDocs(q);
+             querySnapshot.forEach((docSnap) => {
+                 if (docSnap.id !== currentDepositId && docSnap.data().status !== 'approved') {
+                     deleteDoc(doc(db, "deposits", docSnap.id));
+                 }
+             });
+        }
+
+        // --- User Delete Function ---
+        window.deleteUser = async (uid) => {
+            if(!confirm("के तपाईं यो युजरलाई पूर्ण रूपमा डिलेट (Delete) गर्न चाहनुहुन्छ?")) return;
+            try {
+                await deleteDoc(doc(db, "users", uid));
+                Swal.fire("Success", "युजर सफलतापूर्वक हटाइयो।", "success");
+            } catch(e) {
+                Swal.fire("Error", e.message, "error");
+            }
+        };
 
         // --- Event Listeners ---
         document.getElementById('btnSaveSettings').onclick = async () => {

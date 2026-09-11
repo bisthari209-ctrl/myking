@@ -113,11 +113,12 @@
     
     <div class="side-drawer" id="sideDrawer">
         <h2 style="color: var(--gold); font-size: 0.9rem; text-align:center; margin-bottom: 20px;"><i class="fas fa-bars"></i> MENU</h2>
-        <a href="https://wa.me/9779767301333" class="support-link"><i class="fab fa-whatsapp" style="color:#25D366;"></i> Admin</a>
-        <a href="https://t.me/investsite23" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Channel</a>
-        <a href="https://t.me/ludogame600" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Ludo G</a>
-        <a href="https://t.me/pubggame600" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Pubg G</a>
-        <a href="https://t.me/freefiregame600" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Free Fire G</a>
+        <!-- Telegram र WhatsApp लिङ्कहरूलाई 'https://' मा परिवर्तन गरिएको छ जसले गर्दा एरर आउँदैन -->
+        <a href="https://wa.me/9779767301333" target="_blank" class="support-link"><i class="fab fa-whatsapp" style="color:#25D366;"></i> Admin</a>
+        <a href="https://t.me/investsite23" target="_blank" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Channel</a>
+        <a href="https://t.me/ludogame600" target="_blank" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Ludo G</a>
+        <a href="https://t.me/pubggame600" target="_blank" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Pubg G</a>
+        <a href="https://t.me/freefiregame600" target="_blank" class="support-link"><i class="fab fa-telegram-plane" style="color:#0088cc;"></i> Free Fire G</a>
         <a href="profile.html" class="support-link"><i class="fas fa-user-circle" style="color:var(--gold);"></i> Pro</a>
         <button onclick="closeDrawer()" class="play-btn" style="background:#fbbf24; color: #450a0a; width: 100%; margin-top: auto; padding: 8px; font-size: 0.65rem;">बन्द</button>
     </div>
@@ -137,7 +138,7 @@
         <!-- 4. Carrom -->
         <div class="game-card"><img src="https://i.ibb.co/YBnVSZV1/download-1.jpg"><h3>Carrom</h3><button class="play-btn" onclick="openMatchModal('Carrom')">JOIN</button></div>
         
-        <!-- Spin Wheel लाई spin.html मा डाइरेक्ट खुल्ने बनाइएको छ -->
+        <!-- Spin Wheel -->
         <div class="game-card"><img src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=300"><h3>Spin Wheel</h3><button class="play-btn real-spin-btn" onclick="location.href='spin.html'">PLAY</button></div>
         <div class="game-card"><img src="https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=300"><h3>Coin Toss</h3><button class="play-btn demo-btn" onclick="location.href='tail.html'">PLAY</button></div>
         <div class="game-card"><img src="https://i.ibb.co/GvfdCh8y/images.jpg"><h3>Ludo Game</h3><button class="play-btn" onclick="location.href='ludo.html'">PLAY</button></div>
